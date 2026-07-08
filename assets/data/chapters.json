@@ -1,0 +1,48 @@
+[
+  {
+    "tamil": "திருக்குறள்",
+    "section": {
+      "tamil": "பால்",
+      "detail": [
+        {
+          "name": "அறத்துப்பால்",
+          "transliteration": "Araththuppaal",
+          "translation": "Virtue",
+          "number": 1,
+          "chapterGroup": {
+            "tamil": "இயல்",
+            "detail": [
+              {
+                "name": "பாயிரவியல்",
+                "transliteration": "Paayiraviyal",
+                "translation": "Prologue",
+                "number": 1,
+                "chapters": {
+                  "tamil": "அதிகாரம்",
+                  "detail": [
+                    {
+                      "name": "கடவுள் வாழ்த்து",
+                      "translation": "The Praise of God",
+                      "transliteration": "Katavul Vaazhththu",
+                      "number": 1,
+                      "start": 1,
+                      "end": 10
+                    },
+                    {
+                      "name": "வான்சிறப்பு",
+                      "translation": "The Blessing of Rain",
+                      "transliteration": "Vaansirappu",
+                      "number": 2,
+                      "start": 11,
+                      "end": 20
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  }
+]

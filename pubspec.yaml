@@ -1,0 +1,45 @@
+name: thirukkural_app
+description: A daily Thirukkural app.
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.3.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # State management
+  flutter_riverpod: ^2.5.1
+
+  # Local persistence (progress tracking)
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
+
+  # Daily 7:30 AM notification
+  flutter_local_notifications: ^17.2.2
+  timezone: ^0.9.4
+
+  # Screenshot + share
+  screenshot: ^3.0.0
+  share_plus: ^9.0.0
+  path_provider: ^2.1.3
+
+  # Fonts (Tamil support)
+  google_fonts: ^6.2.1
+
+  cupertino_icons: ^1.0.6
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  hive_generator: ^2.0.1
+  build_runner: ^2.4.9
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/data/kurals.json
+    - assets/data/chapters.json
