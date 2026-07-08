@@ -1,4 +1,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Saving the kural image to the gallery (gal). Only needed on API <= 28;
+         on Android 10+ the app writes via MediaStore with no permission. -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="28" />
     <application
         android:label="Kural"
         android:name="${applicationName}"

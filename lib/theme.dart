@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 /// Brand blue used across the app — screen backgrounds and the shareable card.
-const Color kBrandBlue = Color(0xFF0A92C4);
+const Color kBrandBlue = Color(0xFF0A7FA8);
 
 /// Subtle translucent-white fill/border for the tiles on the brand-blue bg.
 final Color kTileFill = Colors.white.withOpacity(0.12);
