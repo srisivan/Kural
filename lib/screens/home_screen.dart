@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:screenshot/screenshot.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../providers/kural_providers.dart';
 import '../widgets/kural_card.dart';
 import '../theme.dart';
@@ -45,7 +46,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         backgroundColor: kDeepBlue,
         elevation: 0,
         foregroundColor: Colors.white,
-        title: const Text('Thirukkural'),
+        title: Text('Thirukkural', style: GoogleFonts.anekTamil()),
         actions: [
           IconButton(
             icon: const Icon(Icons.menu_book_outlined),

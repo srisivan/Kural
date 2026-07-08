@@ -3,6 +3,13 @@ import 'package:google_fonts/google_fonts.dart';
 import '../providers/kural_providers.dart';
 import '../theme.dart';
 
+/// Author/commentator behind each interpretation key.
+const Map<String, String> kInterpretationAuthors = {
+  'mv': 'மு. வரதராசன்',
+  'mk': 'கலைஞர் மு. கருணாநிதி',
+  'sp': 'சாலமன் பாப்பையா',
+};
+
 /// The visual card shown on screen AND captured for sharing.
 /// Keeping it a standalone widget means the on-screen view and the
 /// screenshot are guaranteed to look identical.
@@ -13,29 +20,43 @@ class KuralCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // The kural itself — the biggest, most emphasized text.
-    final kuralStyle = GoogleFonts.tiroTamil(
-      fontSize: 27,
-      height: 1.7,
+    // The kural itself — the biggest, most emphasized text. Sized so each
+    // of the two Tamil lines fits on a single line in the wide tile.
+    final kuralStyle = GoogleFonts.anekTamil(
+      fontSize: 22,
+      height: 1.6,
       fontWeight: FontWeight.w500,
       color: Colors.white,
     );
     // The interpretation — clearly secondary to the kural.
-    final interpretationStyle = GoogleFonts.tiroTamil(
+    final interpretationStyle = GoogleFonts.anekTamil(
       fontSize: 17,
       height: 1.7,
       color: Colors.white.withOpacity(0.82),
     );
-    final labelStyle = GoogleFonts.tiroTamil(
+    final labelStyle = GoogleFonts.anekTamil(
       fontSize: 13,
       letterSpacing: 1.2,
       fontWeight: FontWeight.w600,
       color: Colors.white.withOpacity(0.55),
     );
+    // Bold header for the interpretation ("பொருள்").
+    final headerStyle = GoogleFonts.anekTamil(
+      fontSize: 15,
+      letterSpacing: 0.5,
+      fontWeight: FontWeight.w700,
+      color: Colors.white.withOpacity(0.9),
+    );
+    // Attribution — who the interpretation is by.
+    final attributionStyle = GoogleFonts.anekTamil(
+      fontSize: 13,
+      fontStyle: FontStyle.italic,
+      color: Colors.white.withOpacity(0.6),
+    );
 
     return Container(
       color: kDeepBlue,
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 32),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 32),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -57,7 +78,7 @@ class KuralCard extends StatelessWidget {
                 Text(
                   data.chapter.name,
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.tiroTamil(
+                  style: GoogleFonts.anekTamil(
                     fontSize: 17,
                     fontWeight: FontWeight.w600,
                     height: 1.4,
@@ -79,11 +100,19 @@ class KuralCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('விளக்கம்', style: labelStyle),
+                Text('பொருள்', style: headerStyle),
                 const SizedBox(height: 12),
                 Text(
                   data.interpretationText,
                   style: interpretationStyle,
+                ),
+                const SizedBox(height: 14),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Text(
+                    '— ${kInterpretationAuthors[data.interpretationKey] ?? ''}',
+                    style: attributionStyle,
+                  ),
                 ),
               ],
             ),
@@ -103,7 +132,7 @@ class _Tile extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 26),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 26),
       decoration: BoxDecoration(
         color: kTileFill,
         borderRadius: BorderRadius.circular(20),
