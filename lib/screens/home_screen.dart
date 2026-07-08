@@ -6,6 +6,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import '../providers/kural_providers.dart';
 import '../widgets/kural_card.dart';
+import '../theme.dart';
 import 'chapter_picker_screen.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
@@ -39,11 +40,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final todaysKural = ref.watch(todaysKuralProvider);
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: kDeepBlue,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: kDeepBlue,
         elevation: 0,
-        foregroundColor: Colors.black87,
+        foregroundColor: Colors.white,
         title: const Text('Thirukkural'),
         actions: [
           IconButton(
@@ -82,7 +83,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 )
               : const Icon(Icons.share),
           label: Text(_sharing ? 'Preparing...' : 'Share'),
-          backgroundColor: Colors.black87,
+          backgroundColor: Colors.white,
+          foregroundColor: kDeepBlue,
         ),
         orElse: () => null,
       ),

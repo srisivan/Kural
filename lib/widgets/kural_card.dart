@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../providers/kural_providers.dart';
+import '../theme.dart';
 
 /// The visual card shown on screen AND captured for sharing.
 /// Keeping it a standalone widget means the on-screen view and the
@@ -12,58 +13,92 @@ class KuralCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tamilStyle = GoogleFonts.notoSansTamil(
-      fontSize: 22,
-      height: 1.6,
-      fontWeight: FontWeight.w600,
-      color: Colors.black87,
+    // The kural itself — the biggest, most emphasized text.
+    final kuralStyle = GoogleFonts.tiroTamil(
+      fontSize: 27,
+      height: 1.7,
+      fontWeight: FontWeight.w500,
+      color: Colors.white,
     );
-    final interpretationStyle = GoogleFonts.notoSansTamil(
-      fontSize: 16,
-      height: 1.5,
-      color: Colors.black54,
+    // The interpretation — clearly secondary to the kural.
+    final interpretationStyle = GoogleFonts.tiroTamil(
+      fontSize: 17,
+      height: 1.7,
+      color: Colors.white.withOpacity(0.82),
+    );
+    final labelStyle = GoogleFonts.tiroTamil(
+      fontSize: 13,
+      letterSpacing: 1.2,
+      fontWeight: FontWeight.w600,
+      color: Colors.white.withOpacity(0.55),
     );
 
     return Container(
-      color: Colors.white,
-      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 48),
+      color: kDeepBlue,
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 32),
       child: Column(
         mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(
-            'குறள் ${data.kural.number}',
-            style: GoogleFonts.notoSansTamil(
-              fontSize: 14,
-              color: Colors.black45,
-              letterSpacing: 0.5,
+          // ---------- Kural tile (emphasized) ----------
+          _Tile(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Text(
+                  data.kural.combinedLines,
+                  textAlign: TextAlign.center,
+                  style: kuralStyle,
+                ),
+                const SizedBox(height: 22),
+                Divider(color: Colors.white.withOpacity(0.15), height: 1),
+                const SizedBox(height: 14),
+                // Chapter number + kural number, beneath the kural.
+                Text(
+                  'அதிகாரம் ${data.chapter.number}   ·   குறள் ${data.kural.number}',
+                  textAlign: TextAlign.center,
+                  style: labelStyle,
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 24),
-          Text(
-            data.kural.combinedLines,
-            textAlign: TextAlign.center,
-            style: tamilStyle,
-          ),
-          const SizedBox(height: 28),
-          Container(height: 1, width: 60, color: Colors.black12),
-          const SizedBox(height: 28),
-          Text(
-            data.interpretationText,
-            textAlign: TextAlign.center,
-            style: interpretationStyle,
-          ),
-          const SizedBox(height: 24),
-          Text(
-            data.chapter.translation,
-            style: GoogleFonts.notoSansTamil(
-              fontSize: 12,
-              color: Colors.black38,
-              fontStyle: FontStyle.italic,
+          const SizedBox(height: 18),
+          // ---------- Interpretation tile ----------
+          _Tile(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('விளக்கம்', style: labelStyle),
+                const SizedBox(height: 12),
+                Text(
+                  data.interpretationText,
+                  style: interpretationStyle,
+                ),
+              ],
             ),
           ),
         ],
       ),
+    );
+  }
+}
+
+/// A single distinct tile: translucent-white fill + border, rounded corners.
+class _Tile extends StatelessWidget {
+  final Widget child;
+  const _Tile({required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 26),
+      decoration: BoxDecoration(
+        color: kTileFill,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: kTileBorder),
+      ),
+      child: child,
     );
   }
 }

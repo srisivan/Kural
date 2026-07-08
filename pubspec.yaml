@@ -41,5 +41,5 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
-    - assets/data/kurals.json
-    - assets/data/chapters.json
+    - assets/data/thirukkural.json
+    - assets/data/detail.json

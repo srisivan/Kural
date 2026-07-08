@@ -9,8 +9,11 @@ class DataService {
 
   Future<List<Kural>> loadKurals() async {
     if (_kurals != null) return _kurals!;
-    final raw = await rootBundle.loadString('assets/data/kurals.json');
-    final List<dynamic> jsonList = json.decode(raw);
+    final raw = await rootBundle.loadString('assets/data/thirukkural.json');
+    final decoded = json.decode(raw);
+    // File is either a bare list or wrapped as {"kural": [...]}.
+    final List<dynamic> jsonList =
+        decoded is Map ? decoded['kural'] as List<dynamic> : decoded as List<dynamic>;
     _kurals = jsonList
         .map((e) => Kural.fromJson(e as Map<String, dynamic>))
         .toList()
@@ -20,7 +23,7 @@ class DataService {
 
   Future<List<Chapter>> loadChapters() async {
     if (_chapters != null) return _chapters!;
-    final raw = await rootBundle.loadString('assets/data/chapters.json');
+    final raw = await rootBundle.loadString('assets/data/detail.json');
     final decoded = json.decode(raw);
     // Root JSON is a list containing one object with "tamil" + "section".
     final Map<String, dynamic> root =

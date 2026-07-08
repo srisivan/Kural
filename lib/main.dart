@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'providers/kural_providers.dart';
 import 'screens/home_screen.dart';
 import 'services/notification_service.dart';
+import 'theme.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -42,9 +43,12 @@ class _AppBootstrapState extends ConsumerState<_AppBootstrap> {
       builder: (context, snapshot) {
         if (snapshot.connectionState != ConnectionState.done) {
           return const MaterialApp(
+            debugShowCheckedModeBanner: false,
             home: Scaffold(
-              backgroundColor: Colors.white,
-              body: Center(child: CircularProgressIndicator()),
+              backgroundColor: kDeepBlue,
+              body: Center(
+                child: CircularProgressIndicator(color: Colors.white),
+              ),
             ),
           );
         }
@@ -63,8 +67,9 @@ class ThirukkuralApp extends StatelessWidget {
       title: 'Thirukkural',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        scaffoldBackgroundColor: Colors.white,
-        colorSchemeSeed: Colors.black,
+        scaffoldBackgroundColor: kDeepBlue,
+        colorSchemeSeed: kDeepBlue,
+        brightness: Brightness.dark,
         useMaterial3: true,
       ),
       home: const HomeScreen(),
