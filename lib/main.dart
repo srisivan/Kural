@@ -42,12 +42,34 @@ class _AppBootstrapState extends ConsumerState<_AppBootstrap> {
       future: _initFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState != ConnectionState.done) {
+          // In-app splash — bridges the native splash and the home screen.
           return const MaterialApp(
             debugShowCheckedModeBanner: false,
             home: Scaffold(
               backgroundColor: kDeepBlue,
               body: Center(
-                child: CircularProgressIndicator(color: Colors.white),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.all(Radius.circular(28)),
+                      child: Image(
+                        image: AssetImage('assets/icon/kural_icon.png'),
+                        width: 132,
+                        height: 132,
+                      ),
+                    ),
+                    SizedBox(height: 32),
+                    SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           );

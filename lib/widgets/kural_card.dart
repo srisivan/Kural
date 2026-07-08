@@ -52,8 +52,19 @@ class KuralCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 22),
                 Divider(color: Colors.white.withOpacity(0.15), height: 1),
-                const SizedBox(height: 14),
-                // Chapter number + kural number, beneath the kural.
+                const SizedBox(height: 16),
+                // Chapter title, then chapter number + kural number.
+                Text(
+                  data.chapter.name,
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.tiroTamil(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w600,
+                    height: 1.4,
+                    color: Colors.white.withOpacity(0.9),
+                  ),
+                ),
+                const SizedBox(height: 6),
                 Text(
                   'அதிகாரம் ${data.chapter.number}   ·   குறள் ${data.kural.number}',
                   textAlign: TextAlign.center,
