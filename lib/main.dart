@@ -46,7 +46,7 @@ class _AppBootstrapState extends ConsumerState<_AppBootstrap> {
           return const MaterialApp(
             debugShowCheckedModeBanner: false,
             home: Scaffold(
-              backgroundColor: kDeepBlue,
+              backgroundColor: kBrandBlue,
               body: Center(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -86,11 +86,11 @@ class ThirukkuralApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Thirukkural',
+      title: 'Kural',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        scaffoldBackgroundColor: kDeepBlue,
-        colorSchemeSeed: kDeepBlue,
+        scaffoldBackgroundColor: kBrandBlue,
+        colorSchemeSeed: kBrandBlue,
         brightness: Brightness.dark,
         useMaterial3: true,
       ),

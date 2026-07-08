@@ -58,13 +58,13 @@ flutter_launcher_icons:
   web:
     generate: true
   # Adaptive icon for Android: deep-blue background, PNG as foreground.
-  adaptive_icon_background: "#0B1D4D"
+  adaptive_icon_background: "#0A92C4"
   adaptive_icon_foreground: "assets/icon/kural_icon.png"
 
 # Native splash: deep-blue background with the icon centered.
 flutter_native_splash:
-  color: "#0B1D4D"
+  color: "#0A92C4"
   image: assets/icon/kural_icon.png
   android_12:
-    color: "#0B1D4D"
+    color: "#0A92C4"
     image: assets/icon/kural_icon.png

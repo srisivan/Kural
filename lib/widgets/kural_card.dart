@@ -55,7 +55,7 @@ class KuralCard extends StatelessWidget {
     );
 
     return Container(
-      color: kDeepBlue,
+      color: kBrandBlue,
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 32),
       child: Column(
         mainAxisSize: MainAxisSize.min,

@@ -1,6 +1,6 @@
 {
-    "name": "thirukkural_app",
-    "short_name": "thirukkural_app",
+    "name": "Kural",
+    "short_name": "Kural",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

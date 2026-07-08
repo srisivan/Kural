@@ -20,9 +20,9 @@ class _ChapterPickerScreenState extends ConsumerState<ChapterPickerScreen> {
     final chaptersAsync = ref.watch(chaptersProvider);
 
     return Scaffold(
-      backgroundColor: kDeepBlue,
+      backgroundColor: kBrandBlue,
       appBar: AppBar(
-        backgroundColor: kDeepBlue,
+        backgroundColor: kBrandBlue,
         foregroundColor: Colors.white,
         elevation: 0,
         title: const Text('Choose a chapter'),
@@ -93,7 +93,7 @@ class _ChapterPickerScreenState extends ConsumerState<ChapterPickerScreen> {
                             horizontal: 14, vertical: 6),
                         leading: CircleAvatar(
                           backgroundColor: Colors.white,
-                          foregroundColor: kDeepBlue,
+                          foregroundColor: kBrandBlue,
                           child: Text(
                             '${c.number}',
                             style: const TextStyle(

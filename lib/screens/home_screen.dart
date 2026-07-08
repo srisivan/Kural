@@ -41,12 +41,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final todaysKural = ref.watch(todaysKuralProvider);
 
     return Scaffold(
-      backgroundColor: kDeepBlue,
+      backgroundColor: kBrandBlue,
       appBar: AppBar(
-        backgroundColor: kDeepBlue,
+        backgroundColor: kBrandBlue,
         elevation: 0,
         foregroundColor: Colors.white,
-        title: Text('Thirukkural', style: GoogleFonts.anekTamil()),
+        title: Text('திருக்குறள்', style: GoogleFonts.anekTamil()),
         actions: [
           IconButton(
             icon: const Icon(Icons.menu_book_outlined),
@@ -85,7 +85,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               : const Icon(Icons.share),
           label: Text(_sharing ? 'Preparing...' : 'Share'),
           backgroundColor: Colors.white,
-          foregroundColor: kDeepBlue,
+          foregroundColor: kBrandBlue,
         ),
         orElse: () => null,
       ),
