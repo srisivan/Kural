@@ -125,11 +125,22 @@ class KuralCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       color: kBrandBlue,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 32),
+      padding: const EdgeInsets.fromLTRB(24, 40, 24, 40),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          Text(
+            'திருக்குறள்',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.anekTamil(
+              fontSize: 22,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.5,
+              color: Colors.white,
+            ),
+          ),
+          const SizedBox(height: 30),
           KuralTile(view: data),
           const SizedBox(height: 18),
           InterpretationTile(
