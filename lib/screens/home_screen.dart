@@ -30,39 +30,57 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         foregroundColor: Colors.white,
         title: Text('திருக்குறள்', style: GoogleFonts.anekTamil()),
         actions: [
-          // Share lives in the header, beside the other actions.
-          IconButton(
-            icon: shareBusy
-                ? const SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(
-                        strokeWidth: 2, color: Colors.white),
-                  )
-                : const Icon(Icons.share_outlined),
-            tooltip: 'Share',
-            onPressed: shareBusy
-                ? null
-                : () => todaysKural.whenData((data) => openShareSheet(data)),
-          ),
-          IconButton(
-            icon: const Icon(Icons.explore_outlined),
-            tooltip: 'Explore',
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const ExploreScreen()),
-              );
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.menu_book_outlined),
-            tooltip: 'Choose daily chapter',
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const ChapterPickerScreen()),
-              );
-            },
-          ),
+          // All actions live behind a single header menu.
+          if (shareBusy)
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16),
+              child: Center(
+                child: SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(
+                      strokeWidth: 2, color: Colors.white),
+                ),
+              ),
+            )
+          else
+            PopupMenuButton<String>(
+              icon: const Icon(Icons.more_vert),
+              tooltip: 'Menu',
+              onSelected: (value) {
+                switch (value) {
+                  case 'share':
+                    todaysKural.whenData((data) => openShareSheet(data));
+                    break;
+                  case 'explore':
+                    Navigator.of(context).push(MaterialPageRoute(
+                        builder: (_) => const ExploreScreen()));
+                    break;
+                  case 'chapter':
+                    Navigator.of(context).push(MaterialPageRoute(
+                        builder: (_) => const ChapterPickerScreen()));
+                    break;
+                }
+              },
+              itemBuilder: (ctx) => const [
+                PopupMenuItem(
+                  value: 'share',
+                  child: _MenuRow(
+                      icon: Icons.share_outlined, label: 'Share'),
+                ),
+                PopupMenuItem(
+                  value: 'explore',
+                  child: _MenuRow(
+                      icon: Icons.explore_outlined, label: 'Explore'),
+                ),
+                PopupMenuItem(
+                  value: 'chapter',
+                  child: _MenuRow(
+                      icon: Icons.menu_book_outlined,
+                      label: 'Choose daily chapter'),
+                ),
+              ],
+            ),
         ],
       ),
       body: SafeArea(
@@ -83,6 +101,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           ),
         ),
       ),
+    );
+  }
+}
+
+/// A row (icon + label) used for the header menu items.
+class _MenuRow extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  const _MenuRow({required this.icon, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, size: 20),
+        const SizedBox(width: 12),
+        Text(label),
+      ],
     );
   }
 }
