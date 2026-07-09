@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:screenshot/screenshot.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../providers/kural_providers.dart';
 import '../services/kural_share_actions.dart';
-import '../widgets/kural_card.dart';
+import '../widgets/kural_carousel_view.dart';
 import '../theme.dart';
 import 'chapter_picker_screen.dart';
 import 'explore_screen.dart';
@@ -18,6 +17,17 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 class _HomeScreenState extends ConsumerState<HomeScreen>
     with KuralShareActions {
+  // Interpretation the user has navigated to in the carousel (null → use the
+  // day's default). This is what gets shared/downloaded.
+  String? _selectedKey;
+
+  TodaysKural _selectedView(TodaysKural data, String key) => TodaysKural(
+        kural: data.kural,
+        interpretationKey: key,
+        interpretationText: data.kural.interpretation(key),
+        chapter: data.chapter,
+      );
+
   @override
   Widget build(BuildContext context) {
     final todaysKural = ref.watch(todaysKuralProvider);
@@ -30,7 +40,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         foregroundColor: Colors.white,
         title: Text('திருக்குறள்', style: GoogleFonts.anekTamil()),
         actions: [
-          // All actions live behind a single header menu.
           if (shareBusy)
             const Padding(
               padding: EdgeInsets.symmetric(horizontal: 16),
@@ -50,7 +59,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               onSelected: (value) {
                 switch (value) {
                   case 'share':
-                    todaysKural.whenData((data) => openShareSheet(data));
+                    todaysKural.whenData((data) {
+                      final key = _selectedKey ?? data.interpretationKey;
+                      openShareSheet(_selectedView(data, key));
+                    });
                     break;
                   case 'explore':
                     Navigator.of(context).push(MaterialPageRoute(
@@ -65,13 +77,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               itemBuilder: (ctx) => const [
                 PopupMenuItem(
                   value: 'share',
-                  child: _MenuRow(
-                      icon: Icons.share_outlined, label: 'Share'),
+                  child: _MenuRow(icon: Icons.share_outlined, label: 'Share'),
                 ),
                 PopupMenuItem(
                   value: 'explore',
-                  child: _MenuRow(
-                      icon: Icons.explore_outlined, label: 'Explore'),
+                  child:
+                      _MenuRow(icon: Icons.explore_outlined, label: 'Explore'),
                 ),
                 PopupMenuItem(
                   value: 'chapter',
@@ -91,14 +102,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             child: Text('Error: $err',
                 style: const TextStyle(color: Colors.white70)),
           ),
-          data: (data) => Center(
-            child: SingleChildScrollView(
-              child: Screenshot(
-                controller: screenCaptureController,
-                child: KuralCard(data: data),
+          data: (data) {
+            final selectedKey = _selectedKey ?? data.interpretationKey;
+            return Center(
+              child: SingleChildScrollView(
+                child: KuralCarouselView(
+                  data: data,
+                  selectedKey: selectedKey,
+                  onKeyChanged: (k) => setState(() => _selectedKey = k),
+                ),
               ),
-            ),
-          ),
+            );
+          },
         ),
       ),
     );
@@ -115,7 +130,7 @@ class _MenuRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(icon, size: 20),
+        Icon(icon, size: 20, color: Colors.white),
         const SizedBox(width: 12),
         Text(label),
       ],

@@ -6,18 +6,15 @@ import 'package:share_plus/share_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:gal/gal.dart';
 import '../providers/kural_providers.dart';
-import '../widgets/whatsapp_status_card.dart';
+import '../widgets/kural_card.dart';
 
 /// Shared share/download behaviour for any screen that shows a kural.
 ///
-/// The host screen must wrap its on-screen card in
-/// `Screenshot(controller: screenCaptureController, child: ...)`.
-/// - "Share image" captures whatever card is on screen.
-/// - "WhatsApp Status" and "Download" both use the compact rectangular
-///   status card, rendered off-screen.
+/// Both actions render the same clean [KuralCard] off-screen (so carousel
+/// arrows never appear in the image) using whatever interpretation the passed
+/// [TodaysKural] carries — i.e. the one the user landed on in the carousel.
 mixin KuralShareActions<T extends StatefulWidget> on State<T> {
-  final ScreenshotController screenCaptureController = ScreenshotController();
-  final ScreenshotController _statusController = ScreenshotController();
+  final ScreenshotController _controller = ScreenshotController();
   bool shareBusy = false;
 
   Future<File> _writeTemp(Uint8List bytes, String name) async {
@@ -33,15 +30,15 @@ mixin KuralShareActions<T extends StatefulWidget> on State<T> {
         .showSnackBar(SnackBar(content: Text(msg)));
   }
 
-  Future<Uint8List?> _captureScreenCard() =>
-      screenCaptureController.capture(pixelRatio: 3.0);
-
-  Future<Uint8List> _captureStatusCard(TodaysKural data) {
-    return _statusController.captureFromWidget(
-      WhatsAppStatusCard(data: data),
+  /// Renders the shareable card image. A generous target height lets the card
+  /// size to its content (the boundary captures only the card, not the whole
+  /// canvas), giving a consistent ~1200px-wide image on any device.
+  Future<Uint8List> _renderCard(TodaysKural data) {
+    return _controller.captureFromWidget(
+      KuralCard(data: data),
       context: context,
-      targetSize: WhatsAppStatusCard.canvasSize,
-      pixelRatio: 1.0,
+      targetSize: const Size(400, 3000),
+      pixelRatio: 3.0,
       delay: const Duration(milliseconds: 50),
     );
   }
@@ -58,25 +55,15 @@ mixin KuralShareActions<T extends StatefulWidget> on State<T> {
     }
   }
 
-  Future<void> _shareScreenCard(TodaysKural data) => _run(() async {
-        final bytes = await _captureScreenCard();
-        if (bytes == null) return;
+  Future<void> _share(TodaysKural data) => _run(() async {
+        final bytes = await _renderCard(data);
         final file = await _writeTemp(bytes, 'kural_${data.kural.number}.png');
         await Share.shareXFiles([XFile(file.path)],
             text: 'திருக்குறள் ${data.kural.number}');
       });
 
-  Future<void> _shareStatusCard(TodaysKural data) => _run(() async {
-        final bytes = await _captureStatusCard(data);
-        final file =
-            await _writeTemp(bytes, 'kural_status_${data.kural.number}.png');
-        await Share.shareXFiles([XFile(file.path)],
-            text: 'திருக்குறள் ${data.kural.number}');
-      });
-
-  // Download saves the compact WhatsApp-status card (not the full screen one).
-  Future<void> _downloadStatusCard(TodaysKural data) => _run(() async {
-        final bytes = await _captureStatusCard(data);
+  Future<void> _download(TodaysKural data) => _run(() async {
+        final bytes = await _renderCard(data);
         try {
           await Gal.putImageBytes(bytes, album: 'Kural');
           _snack('Saved to your gallery (Kural album)');
@@ -94,30 +81,27 @@ mixin KuralShareActions<T extends StatefulWidget> on State<T> {
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              leading: const Icon(Icons.image_outlined),
-              title: const Text('Share image'),
-              subtitle: const Text('The full kural card'),
+              iconColor: Colors.white,
+              textColor: Colors.white,
+              leading: const Icon(Icons.share_outlined),
+              title: const Text('Share'),
+              subtitle: Text('Post as a WhatsApp status, or send anywhere',
+                  style: TextStyle(color: Colors.white.withOpacity(0.6))),
               onTap: () {
                 Navigator.pop(ctx);
-                _shareScreenCard(data);
+                _share(data);
               },
             ),
             ListTile(
-              leading: const Icon(Icons.crop_portrait_outlined),
-              title: const Text('WhatsApp Status'),
-              subtitle: const Text('A rectangular card to post as your status'),
-              onTap: () {
-                Navigator.pop(ctx);
-                _shareStatusCard(data);
-              },
-            ),
-            ListTile(
+              iconColor: Colors.white,
+              textColor: Colors.white,
               leading: const Icon(Icons.download_outlined),
-              title: const Text('Download image'),
-              subtitle: const Text('Save the status card to your gallery'),
+              title: const Text('Download'),
+              subtitle: Text('Save the card to your gallery',
+                  style: TextStyle(color: Colors.white.withOpacity(0.6))),
               onTap: () {
                 Navigator.pop(ctx);
-                _downloadStatusCard(data);
+                _download(data);
               },
             ),
           ],

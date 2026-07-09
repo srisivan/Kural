@@ -93,6 +93,26 @@ class ThirukkuralApp extends StatelessWidget {
         colorSchemeSeed: kBrandBlue,
         brightness: Brightness.dark,
         useMaterial3: true,
+        // Keep popovers/sheets on-brand instead of the default dark surface.
+        popupMenuTheme: PopupMenuThemeData(
+          color: kBrandBlue,
+          surfaceTintColor: Colors.transparent,
+          elevation: 8,
+          textStyle: const TextStyle(color: Colors.white),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+            side: BorderSide(color: Colors.white.withOpacity(0.18)),
+          ),
+        ),
+        bottomSheetTheme: BottomSheetThemeData(
+          backgroundColor: kBrandBlue,
+          modalBackgroundColor: kBrandBlue,
+          surfaceTintColor: Colors.transparent,
+          dragHandleColor: Colors.white.withOpacity(0.4),
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+        ),
       ),
       home: const HomeScreen(),
     );
