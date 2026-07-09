@@ -82,67 +82,79 @@ class _InterpretationCarouselState extends State<InterpretationCarousel> {
   @override
   Widget build(BuildContext context) {
     final multiple = widget.interpretations.length > 1;
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        if (multiple) _arrow(Icons.chevron_left, () => _move(-1)),
-        Expanded(
-          child: GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onHorizontalDragEnd: (details) {
-              final v = details.primaryVelocity ?? 0;
-              if (v < 0) {
-                _move(1); // swipe left → next
-              } else if (v > 0) {
-                _move(-1); // swipe right → previous
-              }
+    // Full-width tile with the chevrons overlaid INSIDE it (so navigation
+    // doesn't steal any width from the tile).
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onHorizontalDragEnd: (details) {
+        final v = details.primaryVelocity ?? 0;
+        if (v < 0) {
+          _move(1); // swipe left → next
+        } else if (v > 0) {
+          _move(-1); // swipe right → previous
+        }
+      },
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 260),
+            switchInCurve: Curves.easeOut,
+            switchOutCurve: Curves.easeIn,
+            transitionBuilder: (child, animation) {
+              final incoming = child.key == ValueKey(_index);
+              final beginX = incoming ? _direction * 0.12 : -_direction * 0.12;
+              return FadeTransition(
+                opacity: animation,
+                child: SlideTransition(
+                  position: Tween<Offset>(
+                    begin: Offset(beginX, 0),
+                    end: Offset.zero,
+                  ).animate(animation),
+                  child: child,
+                ),
+              );
             },
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 260),
-              switchInCurve: Curves.easeOut,
-              switchOutCurve: Curves.easeIn,
-              transitionBuilder: (child, animation) {
-                final incoming = child.key == ValueKey(_index);
-                final beginX =
-                    incoming ? _direction * 0.12 : -_direction * 0.12;
-                return FadeTransition(
-                  opacity: animation,
-                  child: SlideTransition(
-                    position: Tween<Offset>(
-                      begin: Offset(beginX, 0),
-                      end: Offset.zero,
-                    ).animate(animation),
-                    child: child,
-                  ),
-                );
-              },
-              layoutBuilder: (currentChild, previousChildren) => Stack(
-                alignment: Alignment.topCenter,
-                children: [
-                  ...previousChildren,
-                  if (currentChild != null) currentChild,
-                ],
-              ),
-              child: InterpretationTile(
-                key: ValueKey(_index),
-                entry: widget.interpretations[_index],
-              ),
+            layoutBuilder: (currentChild, previousChildren) => Stack(
+              alignment: Alignment.topCenter,
+              children: [
+                ...previousChildren,
+                if (currentChild != null) currentChild,
+              ],
+            ),
+            child: InterpretationTile(
+              key: ValueKey(_index),
+              entry: widget.interpretations[_index],
             ),
           ),
-        ),
-        if (multiple) _arrow(Icons.chevron_right, () => _move(1)),
-      ],
+          if (multiple) ...[
+            Positioned(
+              left: 4,
+              child: _arrow(Icons.chevron_left, () => _move(-1)),
+            ),
+            Positioned(
+              right: 4,
+              child: _arrow(Icons.chevron_right, () => _move(1)),
+            ),
+          ],
+        ],
+      ),
     );
   }
 
   Widget _arrow(IconData icon, VoidCallback onTap) {
-    return IconButton(
-      onPressed: onTap,
-      iconSize: 22,
-      splashRadius: 20,
-      padding: const EdgeInsets.all(4),
-      constraints: const BoxConstraints(),
-      icon: Icon(icon, color: Colors.white.withOpacity(0.75)),
+    return InkResponse(
+      onTap: onTap,
+      radius: 22,
+      child: Container(
+        padding: const EdgeInsets.all(5),
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: kBrandBlue.withOpacity(0.55),
+          border: Border.all(color: Colors.white.withOpacity(0.25)),
+        ),
+        child: Icon(icon, size: 20, color: Colors.white),
+      ),
     );
   }
 }
