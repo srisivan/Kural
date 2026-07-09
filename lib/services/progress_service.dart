@@ -42,4 +42,25 @@ class ProgressService {
     await _box.put('lastServedDate', date);
     await _box.put('lastInterpretation', interpretationKey);
   }
+
+  // ---- Which text the home screen is showing: 'kural' | 'aathichudi' ----
+  String get contentMode => _box.get('contentMode') as String? ?? 'kural';
+  Future<void> setContentMode(String mode) => _box.put('contentMode', mode);
+
+  // ---- Aathichudi daily progress (parallel to the kural track) ----
+  int? get aathiLastNumber => _box.get('aathiLastNumber') as int?;
+  String? get aathiLastDate => _box.get('aathiLastDate') as String?;
+
+  /// What to do once every aathichudi has been shown: 'repeat' | 'random'.
+  /// Null means the user hasn't chosen yet.
+  String? get aathiEndMode => _box.get('aathiEndMode') as String?;
+  Future<void> setAathiEndMode(String mode) => _box.put('aathiEndMode', mode);
+
+  Future<void> saveAathiServed({
+    required int number,
+    required String date,
+  }) async {
+    await _box.put('aathiLastNumber', number);
+    await _box.put('aathiLastDate', date);
+  }
 }

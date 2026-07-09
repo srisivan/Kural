@@ -8,14 +8,13 @@ class NotificationService {
 
   static const int dailyKuralNotificationId = 100;
 
-  // Daily reminder time (device-local).
+  // Daily reminder time, pinned to India Standard Time.
   static const int _hour = 8;
-  static const int _minute = 5;
+  static const int _minute = 0;
 
   Future<void> init() async {
-    // Loads the tz database so zonedSchedule can work. We schedule using
-    // absolute UTC instants derived from device-local time (below), so we
-    // don't need to resolve the device's IANA zone / set tz.local.
+    // Loads the tz database so zonedSchedule can work. The reminder is pinned
+    // to IST (Asia/Kolkata) below, so we don't rely on the device's zone.
     tzdata.initializeTimeZones();
 
     const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
@@ -37,18 +36,14 @@ class NotificationService {
   }
 
   Future<void> scheduleDailyReminder() async {
-    // Dart's DateTime is already in device-local time. Compute the next
-    // occurrence of _hour:_minute locally, then convert to an absolute UTC
-    // instant. Scheduling the exact instant makes it fire at the right
-    // wall-clock time even though tz.local isn't configured — the earlier
-    // bug was scheduling "08:05" against tz.local, which defaults to UTC.
-    final nowLocal = DateTime.now();
-    var whenLocal =
-        DateTime(nowLocal.year, nowLocal.month, nowLocal.day, _hour, _minute);
-    if (!whenLocal.isAfter(nowLocal)) {
-      whenLocal = whenLocal.add(const Duration(days: 1));
+    // Pin to 8:00 AM IST regardless of the device's timezone.
+    final ist = tz.getLocation('Asia/Kolkata');
+    final now = tz.TZDateTime.now(ist);
+    var scheduled =
+        tz.TZDateTime(ist, now.year, now.month, now.day, _hour, _minute);
+    if (!scheduled.isAfter(now)) {
+      scheduled = scheduled.add(const Duration(days: 1));
     }
-    final scheduled = tz.TZDateTime.from(whenLocal.toUtc(), tz.UTC);
 
     try {
       await _plugin.zonedSchedule(

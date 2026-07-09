@@ -5,15 +5,13 @@ import 'package:screenshot/screenshot.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:gal/gal.dart';
-import '../providers/kural_providers.dart';
-import '../widgets/kural_card.dart';
+import '../models/card_content.dart';
+import '../widgets/content_card.dart';
 
-/// Shared share/download behaviour for any screen that shows a kural.
-///
-/// Both actions render the same clean [KuralCard] off-screen (so carousel
-/// arrows never appear in the image) using whatever interpretation the passed
-/// [TodaysKural] carries — i.e. the one the user landed on in the carousel.
-mixin KuralShareActions<T extends StatefulWidget> on State<T> {
+/// Shared share/download behaviour for any screen showing a [CardContent].
+/// Both actions render the same clean [ContentCard] off-screen using whichever
+/// interpretation the passed content carries (the one the user landed on).
+mixin ContentShareActions<T extends StatefulWidget> on State<T> {
   final ScreenshotController _controller = ScreenshotController();
   bool shareBusy = false;
 
@@ -30,12 +28,9 @@ mixin KuralShareActions<T extends StatefulWidget> on State<T> {
         .showSnackBar(SnackBar(content: Text(msg)));
   }
 
-  /// Renders the shareable card image. A generous target height lets the card
-  /// size to its content (the boundary captures only the card, not the whole
-  /// canvas), giving a consistent ~1200px-wide image on any device.
-  Future<Uint8List> _renderCard(TodaysKural data) {
+  Future<Uint8List> _renderCard(CardContent content) {
     return _controller.captureFromWidget(
-      KuralCard(data: data),
+      ContentCard(content: content),
       context: context,
       targetSize: const Size(400, 3000),
       pixelRatio: 3.0,
@@ -55,15 +50,14 @@ mixin KuralShareActions<T extends StatefulWidget> on State<T> {
     }
   }
 
-  Future<void> _share(TodaysKural data) => _run(() async {
-        final bytes = await _renderCard(data);
-        final file = await _writeTemp(bytes, 'kural_${data.kural.number}.png');
-        await Share.shareXFiles([XFile(file.path)],
-            text: 'திருக்குறள் ${data.kural.number}');
+  Future<void> _share(CardContent content) => _run(() async {
+        final bytes = await _renderCard(content);
+        final file = await _writeTemp(bytes, '${content.shareFileStem}.png');
+        await Share.shareXFiles([XFile(file.path)], text: content.title);
       });
 
-  Future<void> _download(TodaysKural data) => _run(() async {
-        final bytes = await _renderCard(data);
+  Future<void> _download(CardContent content) => _run(() async {
+        final bytes = await _renderCard(content);
         try {
           await Gal.putImageBytes(bytes, album: 'Kural');
           _snack('Saved to your gallery (Kural album)');
@@ -72,7 +66,7 @@ mixin KuralShareActions<T extends StatefulWidget> on State<T> {
         }
       });
 
-  void openShareSheet(TodaysKural data) {
+  void openShareSheet(CardContent content) {
     showModalBottomSheet(
       context: context,
       showDragHandle: true,
@@ -89,7 +83,7 @@ mixin KuralShareActions<T extends StatefulWidget> on State<T> {
                   style: TextStyle(color: Colors.white.withOpacity(0.6))),
               onTap: () {
                 Navigator.pop(ctx);
-                _share(data);
+                _share(content);
               },
             ),
             ListTile(
@@ -101,7 +95,7 @@ mixin KuralShareActions<T extends StatefulWidget> on State<T> {
                   style: TextStyle(color: Colors.white.withOpacity(0.6))),
               onTap: () {
                 Navigator.pop(ctx);
-                _download(data);
+                _download(content);
               },
             ),
           ],

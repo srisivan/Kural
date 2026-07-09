@@ -1,20 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../providers/kural_providers.dart';
+import '../models/card_content.dart';
 import '../theme.dart';
 
-/// Author/commentator behind each interpretation key.
-const Map<String, String> kInterpretationAuthors = {
-  'mv': 'மு. வரதராசன்',
-  'mk': 'கலைஞர் மு. கருணாநிதி',
-  'sp': 'சாலமன் பாப்பையா',
-};
-
-/// The kural itself + chapter title + numbers. Shared by the on-screen view
-/// and the shareable card so they always look identical.
-class KuralTile extends StatelessWidget {
-  final TodaysKural view;
-  const KuralTile({super.key, required this.view});
+/// The verse tile: poem + (optional chapter name) + meta line. Shared by the
+/// on-screen view and the shareable card so they look identical.
+class PoemTile extends StatelessWidget {
+  final CardContent content;
+  const PoemTile({super.key, required this.content});
 
   @override
   Widget build(BuildContext context) {
@@ -22,7 +15,7 @@ class KuralTile extends StatelessWidget {
       child: Column(
         children: [
           Text(
-            view.kural.combinedLines,
+            content.poem,
             textAlign: TextAlign.center,
             style: GoogleFonts.anekTamil(
               fontSize: 22,
@@ -34,19 +27,21 @@ class KuralTile extends StatelessWidget {
           const SizedBox(height: 22),
           Divider(color: Colors.white.withOpacity(0.15), height: 1),
           const SizedBox(height: 16),
-          Text(
-            view.chapter.name,
-            textAlign: TextAlign.center,
-            style: GoogleFonts.anekTamil(
-              fontSize: 17,
-              fontWeight: FontWeight.w600,
-              height: 1.4,
-              color: Colors.white.withOpacity(0.9),
+          if (content.chapterName != null) ...[
+            Text(
+              content.chapterName!,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.anekTamil(
+                fontSize: 17,
+                fontWeight: FontWeight.w600,
+                height: 1.4,
+                color: Colors.white.withOpacity(0.9),
+              ),
             ),
-          ),
-          const SizedBox(height: 6),
+            const SizedBox(height: 6),
+          ],
           Text(
-            'அதிகாரம் ${view.chapter.number}   ·   குறள் ${view.kural.number}',
+            content.metaLine,
             textAlign: TextAlign.center,
             style: GoogleFonts.anekTamil(
               fontSize: 13,
@@ -61,16 +56,10 @@ class KuralTile extends StatelessWidget {
   }
 }
 
-/// A single interpretation ("பொருள்" + text + author). Used both as a
-/// carousel page on screen and inside the shareable card.
+/// A single interpretation panel (header + text + optional author).
 class InterpretationTile extends StatelessWidget {
-  final String interpretationKey;
-  final String text;
-  const InterpretationTile({
-    super.key,
-    required this.interpretationKey,
-    required this.text,
-  });
+  final InterpretationEntry entry;
+  const InterpretationTile({super.key, required this.entry});
 
   @override
   Widget build(BuildContext context) {
@@ -79,7 +68,7 @@ class InterpretationTile extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'பொருள்',
+            entry.header,
             style: GoogleFonts.anekTamil(
               fontSize: 15,
               letterSpacing: 0.5,
@@ -89,25 +78,27 @@ class InterpretationTile extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           Text(
-            text,
+            entry.text,
             style: GoogleFonts.anekTamil(
               fontSize: 17,
               height: 1.7,
               color: Colors.white.withOpacity(0.82),
             ),
           ),
-          const SizedBox(height: 14),
-          Align(
-            alignment: Alignment.centerRight,
-            child: Text(
-              '— ${kInterpretationAuthors[interpretationKey] ?? ''}',
-              style: GoogleFonts.anekTamil(
-                fontSize: 13,
-                fontStyle: FontStyle.italic,
-                color: Colors.white.withOpacity(0.6),
+          if (entry.author != null) ...[
+            const SizedBox(height: 14),
+            Align(
+              alignment: Alignment.centerRight,
+              child: Text(
+                '— ${entry.author}',
+                style: GoogleFonts.anekTamil(
+                  fontSize: 13,
+                  fontStyle: FontStyle.italic,
+                  color: Colors.white.withOpacity(0.6),
+                ),
               ),
             ),
-          ),
+          ],
         ],
       ),
     );
@@ -115,11 +106,10 @@ class InterpretationTile extends StatelessWidget {
 }
 
 /// The clean, single-interpretation card rendered off-screen to produce the
-/// shared/downloaded image. Uses `data.interpretationKey`, so callers pass a
-/// [TodaysKural] carrying the interpretation the user landed on.
-class KuralCard extends StatelessWidget {
-  final TodaysKural data;
-  const KuralCard({super.key, required this.data});
+/// shared/downloaded image. Uniform for Thirukkural and Aathichudi.
+class ContentCard extends StatelessWidget {
+  final CardContent content;
+  const ContentCard({super.key, required this.content});
 
   @override
   Widget build(BuildContext context) {
@@ -131,7 +121,7 @@ class KuralCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            'திருக்குறள்',
+            content.title,
             textAlign: TextAlign.center,
             style: GoogleFonts.anekTamil(
               fontSize: 22,
@@ -141,12 +131,9 @@ class KuralCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 30),
-          KuralTile(view: data),
+          PoemTile(content: content),
           const SizedBox(height: 18),
-          InterpretationTile(
-            interpretationKey: data.interpretationKey,
-            text: data.interpretationText,
-          ),
+          InterpretationTile(entry: content.selected),
         ],
       ),
     );

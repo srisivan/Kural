@@ -50,6 +50,7 @@ flutter:
   assets:
     - assets/data/thirukkural.json
     - assets/data/detail.json
+    - assets/data/aathicudi.json
     - assets/icon/kural_icon.png
 
 # Launcher icon generated from the dropped 1024x1024 PNG.

@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../models/card_content.dart';
 import '../models/chapter.dart';
 import '../providers/kural_providers.dart';
 import '../theme.dart';
-import 'kural_detail_screen.dart';
+import 'content_detail_screen.dart';
 
 /// Lists every kural within a chapter (scrollable). Tapping one opens its
 /// detail page. Read-only — does not affect daily progress.
@@ -93,7 +94,8 @@ class ChapterKuralsScreen extends ConsumerWidget {
                   ),
                   onTap: () {
                     Navigator.of(context).push(MaterialPageRoute(
-                      builder: (_) => KuralDetailScreen(kuralNumber: k.number),
+                      builder: (_) => ContentDetailScreen(
+                          content: CardContent.fromKural(k, chapter)),
                     ));
                   },
                 ),

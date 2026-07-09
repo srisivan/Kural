@@ -2,6 +2,7 @@ import 'dart:math';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/kural.dart';
 import '../models/chapter.dart';
+import '../models/aathichudi.dart';
 import '../services/data_service.dart';
 import '../services/progress_service.dart';
 
@@ -15,6 +16,34 @@ final kuralsProvider = FutureProvider<List<Kural>>((ref) async {
 final chaptersProvider = FutureProvider<List<Chapter>>((ref) async {
   return ref.read(dataServiceProvider).loadChapters();
 });
+
+final aathichudiProvider = FutureProvider<List<Aathichudi>>((ref) async {
+  return ref.read(dataServiceProvider).loadAathichudi();
+});
+
+/// Which text the home screen shows: 'kural' | 'aathichudi'.
+class ContentModeNotifier extends Notifier<String> {
+  @override
+  String build() => ref.read(progressServiceProvider).contentMode;
+
+  Future<void> setMode(String mode) async {
+    await ref.read(progressServiceProvider).setContentMode(mode);
+    state = mode;
+  }
+
+  Future<void> toggle() =>
+      setMode(state == 'kural' ? 'aathichudi' : 'kural');
+}
+
+final contentModeProvider =
+    NotifierProvider<ContentModeNotifier, String>(ContentModeNotifier.new);
+
+String todayString() {
+  final now = DateTime.now();
+  return '${now.year.toString().padLeft(4, '0')}-'
+      '${now.month.toString().padLeft(2, '0')}-'
+      '${now.day.toString().padLeft(2, '0')}';
+}
 
 const interpretationKeys = ['mv', 'sp', 'mk'];
 
@@ -147,4 +176,73 @@ class TodaysKuralNotifier extends AsyncNotifier<TodaysKural> {
 final todaysKuralProvider =
     AsyncNotifierProvider<TodaysKuralNotifier, TodaysKural>(
   TodaysKuralNotifier.new,
+);
+
+// ---------------------------------------------------------------------------
+// Aathichudi
+// ---------------------------------------------------------------------------
+
+Aathichudi aathichudiByNumber(List<Aathichudi> list, int number) =>
+    list.firstWhere((a) => a.number == number);
+
+/// Today's aathichudi. [needsEndChoice] is true once the whole set is finished
+/// and the user hasn't yet chosen to repeat or randomize.
+class TodaysAathichudi {
+  final Aathichudi? item;
+  final bool needsEndChoice;
+  const TodaysAathichudi({this.item, this.needsEndChoice = false});
+}
+
+class TodaysAathichudiNotifier extends AsyncNotifier<TodaysAathichudi> {
+  @override
+  Future<TodaysAathichudi> build() async {
+    final list = await ref.watch(aathichudiProvider.future);
+    final progress = ref.read(progressServiceProvider);
+
+    final today = todayString();
+    final last = progress.aathiLastNumber;
+    final lastDate = progress.aathiLastDate;
+    final endMode = progress.aathiEndMode;
+    final count = list.length;
+
+    // Already served today — idempotent re-show.
+    if (lastDate == today && last != null) {
+      return TodaysAathichudi(item: aathichudiByNumber(list, last));
+    }
+
+    int next;
+    if (endMode == 'random') {
+      // Date-seeded so it's stable for the whole day.
+      final seed = int.parse(today.replaceAll('-', ''));
+      next = Random(seed).nextInt(count) + 1;
+    } else if (endMode == 'repeat') {
+      next = (last == null || last >= count) ? 1 : last + 1;
+    } else {
+      // First pass through the set (no end mode chosen yet).
+      if (last == null) {
+        next = 1;
+      } else if (last < count) {
+        next = last + 1;
+      } else {
+        // Finished the set — ask the user what to do next.
+        return const TodaysAathichudi(needsEndChoice: true);
+      }
+    }
+
+    await progress.saveAathiServed(number: next, date: today);
+    return TodaysAathichudi(item: aathichudiByNumber(list, next));
+  }
+
+  /// Called from the end-of-set prompt: 'repeat' or 'random'.
+  Future<void> chooseEndMode(String mode) async {
+    final progress = ref.read(progressServiceProvider);
+    await progress.setAathiEndMode(mode);
+    ref.invalidateSelf();
+    await future;
+  }
+}
+
+final todaysAathichudiProvider =
+    AsyncNotifierProvider<TodaysAathichudiNotifier, TodaysAathichudi>(
+  TodaysAathichudiNotifier.new,
 );

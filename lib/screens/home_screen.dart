@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../models/card_content.dart';
 import '../providers/kural_providers.dart';
-import '../services/kural_share_actions.dart';
-import '../widgets/kural_carousel_view.dart';
+import '../services/content_share_actions.dart';
+import '../widgets/content_carousel_view.dart';
 import '../theme.dart';
 import 'chapter_picker_screen.dart';
 import 'explore_screen.dart';
@@ -16,21 +17,35 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen>
-    with KuralShareActions {
-  // Interpretation the user has navigated to in the carousel (null → use the
-  // day's default). This is what gets shared/downloaded.
-  String? _selectedKey;
+    with ContentShareActions {
+  // Interpretation index the user swiped to, per track.
+  int? _kuralIndex;
+  int _aathiIndex = 0;
 
-  TodaysKural _selectedView(TodaysKural data, String key) => TodaysKural(
-        kural: data.kural,
-        interpretationKey: key,
-        interpretationText: data.kural.interpretation(key),
-        chapter: data.chapter,
-      );
+  int _kuralDefaultIndex(TodaysKural t) {
+    final i = kuralInterpretationKeys.indexOf(t.interpretationKey);
+    return i < 0 ? 0 : i;
+  }
+
+  /// The content currently on screen — used when the user taps Share.
+  CardContent? _currentContent() {
+    final mode = ref.read(contentModeProvider);
+    if (mode == 'kural') {
+      final t = ref.read(todaysKuralProvider).valueOrNull;
+      if (t == null) return null;
+      final idx = _kuralIndex ?? _kuralDefaultIndex(t);
+      return CardContent.fromKural(t.kural, t.chapter).withIndex(idx);
+    } else {
+      final a = ref.read(todaysAathichudiProvider).valueOrNull;
+      if (a?.item == null) return null;
+      return CardContent.fromAathichudi(a!.item!).withIndex(_aathiIndex);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final todaysKural = ref.watch(todaysKuralProvider);
+    final mode = ref.watch(contentModeProvider);
+    final isKural = mode == 'kural';
 
     return Scaffold(
       backgroundColor: kBrandBlue,
@@ -38,7 +53,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         backgroundColor: kBrandBlue,
         elevation: 0,
         foregroundColor: Colors.white,
-        title: Text('திருக்குறள்', style: GoogleFonts.anekTamil()),
+        titleSpacing: 12,
+        title: _ModeTitleTile(
+          title: isKural ? 'திருக்குறள்' : 'ஆத்திசூடி',
+          onToggle: () => ref.read(contentModeProvider.notifier).toggle(),
+        ),
         actions: [
           if (shareBusy)
             const Padding(
@@ -59,10 +78,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               onSelected: (value) {
                 switch (value) {
                   case 'share':
-                    todaysKural.whenData((data) {
-                      final key = _selectedKey ?? data.interpretationKey;
-                      openShareSheet(_selectedView(data, key));
-                    });
+                    final content = _currentContent();
+                    if (content != null) openShareSheet(content);
                     break;
                   case 'explore':
                     Navigator.of(context).push(MaterialPageRoute(
@@ -74,46 +91,175 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                     break;
                 }
               },
-              itemBuilder: (ctx) => const [
-                PopupMenuItem(
+              itemBuilder: (ctx) => [
+                const PopupMenuItem(
                   value: 'share',
                   child: _MenuRow(icon: Icons.share_outlined, label: 'Share'),
                 ),
-                PopupMenuItem(
+                const PopupMenuItem(
                   value: 'explore',
                   child:
                       _MenuRow(icon: Icons.explore_outlined, label: 'Explore'),
                 ),
-                PopupMenuItem(
-                  value: 'chapter',
-                  child: _MenuRow(
-                      icon: Icons.menu_book_outlined,
-                      label: 'Choose daily chapter'),
-                ),
+                if (isKural)
+                  const PopupMenuItem(
+                    value: 'chapter',
+                    child: _MenuRow(
+                        icon: Icons.menu_book_outlined,
+                        label: 'Choose daily chapter'),
+                  ),
               ],
             ),
         ],
       ),
       body: SafeArea(
-        child: todaysKural.when(
-          loading: () => const Center(
-              child: CircularProgressIndicator(color: Colors.white)),
-          error: (err, st) => Center(
-            child: Text('Error: $err',
-                style: const TextStyle(color: Colors.white70)),
+        child: isKural ? _buildKural() : _buildAathichudi(),
+      ),
+    );
+  }
+
+  Widget _buildKural() {
+    final todays = ref.watch(todaysKuralProvider);
+    return todays.when(
+      loading: () =>
+          const Center(child: CircularProgressIndicator(color: Colors.white)),
+      error: (e, st) => _errorText('$e'),
+      data: (t) {
+        final index = _kuralIndex ?? _kuralDefaultIndex(t);
+        final content = CardContent.fromKural(t.kural, t.chapter, selectedIndex: index);
+        return Center(
+          child: SingleChildScrollView(
+            child: ContentCarouselView(
+              content: content,
+              onIndexChanged: (i) => setState(() => _kuralIndex = i),
+            ),
           ),
-          data: (data) {
-            final selectedKey = _selectedKey ?? data.interpretationKey;
-            return Center(
-              child: SingleChildScrollView(
-                child: KuralCarouselView(
-                  data: data,
-                  selectedKey: selectedKey,
-                  onKeyChanged: (k) => setState(() => _selectedKey = k),
-                ),
+        );
+      },
+    );
+  }
+
+  Widget _buildAathichudi() {
+    final todays = ref.watch(todaysAathichudiProvider);
+    return todays.when(
+      loading: () =>
+          const Center(child: CircularProgressIndicator(color: Colors.white)),
+      error: (e, st) => _errorText('$e'),
+      data: (a) {
+        if (a.needsEndChoice || a.item == null) {
+          return _EndOfSetPrompt(
+            onChoose: (m) =>
+                ref.read(todaysAathichudiProvider.notifier).chooseEndMode(m),
+          );
+        }
+        final content =
+            CardContent.fromAathichudi(a.item!, selectedIndex: _aathiIndex);
+        return Center(
+          child: SingleChildScrollView(
+            child: ContentCarouselView(
+              content: content,
+              onIndexChanged: (i) => setState(() => _aathiIndex = i),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _errorText(String e) => Center(
+        child: Text('Error: $e',
+            style: const TextStyle(color: Colors.white70)),
+      );
+}
+
+/// The translucent title chip in the header. Swipe or tap to switch texts.
+class _ModeTitleTile extends StatelessWidget {
+  final String title;
+  final VoidCallback onToggle;
+  const _ModeTitleTile({required this.title, required this.onToggle});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onToggle,
+      onHorizontalDragEnd: (_) => onToggle(),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: kTileFill,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: kTileBorder),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(title,
+                style: GoogleFonts.anekTamil(
+                    fontSize: 18, fontWeight: FontWeight.w600)),
+            const SizedBox(width: 8),
+            Icon(Icons.swap_horiz,
+                size: 18, color: Colors.white.withOpacity(0.7)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _EndOfSetPrompt extends StatelessWidget {
+  final ValueChanged<String> onChoose;
+  const _EndOfSetPrompt({required this.onChoose});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(28),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.emoji_events_outlined,
+                color: Colors.white, size: 48),
+            const SizedBox(height: 16),
+            Text(
+              'ஆத்திசூடி முற்றிற்று!',
+              style: GoogleFonts.anekTamil(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              "You've been through every aathichudi. What next?",
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.white.withOpacity(0.75)),
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                style: FilledButton.styleFrom(
+                    backgroundColor: Colors.white, foregroundColor: kBrandBlue),
+                icon: const Icon(Icons.replay),
+                label: const Text('Repeat from the start'),
+                onPressed: () => onChoose('repeat'),
               ),
-            );
-          },
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.white,
+                  side: BorderSide(color: Colors.white.withOpacity(0.5)),
+                ),
+                icon: const Icon(Icons.shuffle),
+                label: const Text('Randomize each day'),
+                onPressed: () => onChoose('random'),
+              ),
+            ),
+          ],
         ),
       ),
     );
