@@ -56,10 +56,20 @@ class PoemTile extends StatelessWidget {
   }
 }
 
-/// A single interpretation panel (header + text + optional author).
+/// A single interpretation panel (header + text + optional author). When
+/// [dotCount] > 1, a page indicator is drawn inside the tile beneath the
+/// content — used by the on-screen carousel, omitted on the shared card.
 class InterpretationTile extends StatelessWidget {
   final InterpretationEntry entry;
-  const InterpretationTile({super.key, required this.entry});
+  final int? dotCount;
+  final int dotIndex;
+
+  const InterpretationTile({
+    super.key,
+    required this.entry,
+    this.dotCount,
+    this.dotIndex = 0,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -99,8 +109,39 @@ class InterpretationTile extends StatelessWidget {
               ),
             ),
           ],
+          if (dotCount != null && dotCount! > 1) ...[
+            const SizedBox(height: 20),
+            Center(child: _Dots(count: dotCount!, active: dotIndex)),
+          ],
         ],
       ),
+    );
+  }
+}
+
+/// Page indicator: highlights the active interpretation.
+class _Dots extends StatelessWidget {
+  final int count;
+  final int active;
+  const _Dots({required this.count, required this.active});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: List.generate(count, (i) {
+        final on = i == active;
+        return AnimatedContainer(
+          duration: const Duration(milliseconds: 220),
+          margin: const EdgeInsets.symmetric(horizontal: 4),
+          width: on ? 20 : 8,
+          height: 8,
+          decoration: BoxDecoration(
+            color: on ? Colors.white : Colors.white.withOpacity(0.3),
+            borderRadius: BorderRadius.circular(4),
+          ),
+        );
+      }),
     );
   }
 }

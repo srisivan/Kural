@@ -81,9 +81,8 @@ class _InterpretationCarouselState extends State<InterpretationCarousel> {
 
   @override
   Widget build(BuildContext context) {
-    final multiple = widget.interpretations.length > 1;
-    // Full-width tile with the chevrons overlaid INSIDE it (so navigation
-    // doesn't steal any width from the tile).
+    final count = widget.interpretations.length;
+    // Swipe to navigate; the page-indicator dots live inside the tile.
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onHorizontalDragEnd: (details) {
@@ -94,66 +93,37 @@ class _InterpretationCarouselState extends State<InterpretationCarousel> {
           _move(-1); // swipe right → previous
         }
       },
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          AnimatedSwitcher(
-            duration: const Duration(milliseconds: 260),
-            switchInCurve: Curves.easeOut,
-            switchOutCurve: Curves.easeIn,
-            transitionBuilder: (child, animation) {
-              final incoming = child.key == ValueKey(_index);
-              final beginX = incoming ? _direction * 0.12 : -_direction * 0.12;
-              return FadeTransition(
-                opacity: animation,
-                child: SlideTransition(
-                  position: Tween<Offset>(
-                    begin: Offset(beginX, 0),
-                    end: Offset.zero,
-                  ).animate(animation),
-                  child: child,
-                ),
-              );
-            },
-            layoutBuilder: (currentChild, previousChildren) => Stack(
-              alignment: Alignment.topCenter,
-              children: [
-                ...previousChildren,
-                if (currentChild != null) currentChild,
-              ],
+      child: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 260),
+        switchInCurve: Curves.easeOut,
+        switchOutCurve: Curves.easeIn,
+        transitionBuilder: (child, animation) {
+          final incoming = child.key == ValueKey(_index);
+          final beginX = incoming ? _direction * 0.12 : -_direction * 0.12;
+          return FadeTransition(
+            opacity: animation,
+            child: SlideTransition(
+              position: Tween<Offset>(
+                begin: Offset(beginX, 0),
+                end: Offset.zero,
+              ).animate(animation),
+              child: child,
             ),
-            child: InterpretationTile(
-              key: ValueKey(_index),
-              entry: widget.interpretations[_index],
-            ),
-          ),
-          if (multiple) ...[
-            Positioned(
-              left: 4,
-              child: _arrow(Icons.chevron_left, () => _move(-1)),
-            ),
-            Positioned(
-              right: 4,
-              child: _arrow(Icons.chevron_right, () => _move(1)),
-            ),
+          );
+        },
+        layoutBuilder: (currentChild, previousChildren) => Stack(
+          alignment: Alignment.topCenter,
+          children: [
+            ...previousChildren,
+            if (currentChild != null) currentChild,
           ],
-        ],
-      ),
-    );
-  }
-
-  Widget _arrow(IconData icon, VoidCallback onTap) {
-    return InkResponse(
-      onTap: onTap,
-      radius: 22,
-      child: Container(
-        padding: const EdgeInsets.all(5),
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: kBrandBlue.withOpacity(0.55),
-          border: Border.all(color: Colors.white.withOpacity(0.25)),
         ),
-        child: Icon(icon, size: 20, color: Colors.white),
+        child: InterpretationTile(
+          key: ValueKey(_index),
+          entry: widget.interpretations[_index],
+          dotCount: count,
+          dotIndex: _index,
+        ),
       ),
     );
   }
