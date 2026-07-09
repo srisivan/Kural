@@ -45,8 +45,6 @@ String todayString() {
       '${now.day.toString().padLeft(2, '0')}';
 }
 
-const interpretationKeys = ['mv', 'sp', 'mk'];
-
 class TodaysKural {
   final Kural kural;
   final String interpretationKey;
@@ -106,7 +104,7 @@ class TodaysKuralNotifier extends AsyncNotifier<TodaysKural> {
     if (lastDate == todayStr && lastKuralNum != null) {
       // Already served today — show the same one again (idempotent).
       nextKuralNumber = lastKuralNum;
-      interpretationKey = progress.lastInterpretation ?? 'mv';
+      interpretationKey = progress.lastInterpretation ?? 'sp';
     } else {
       if (lastKuralNum == null) {
         // First run — start at the chosen chapter's first kural.
@@ -120,7 +118,9 @@ class TodaysKuralNotifier extends AsyncNotifier<TodaysKural> {
         nextKuralNumber = lastKuralNum + 1;
         if (nextKuralNumber > lastKural) nextKuralNumber = firstKural;
       }
-      interpretationKey = _pickInterpretationForDate(todayStr);
+      // Always start the day on the first interpretation in the carousel
+      // order (sp); the user can swipe through the rest.
+      interpretationKey = 'sp';
       await progress.saveServed(
         kuralNumber: nextKuralNumber,
         date: todayStr,
@@ -157,20 +157,7 @@ class TodaysKuralNotifier extends AsyncNotifier<TodaysKural> {
     await future; // wait for rebuild to settle
   }
 
-  String _todayString() {
-    final now = DateTime.now();
-    return '${now.year.toString().padLeft(4, '0')}-'
-        '${now.month.toString().padLeft(2, '0')}-'
-        '${now.day.toString().padLeft(2, '0')}';
-  }
-
-  /// Deterministic "random" pick seeded by date, so it doesn't change
-  /// if the widget rebuilds during the same day.
-  String _pickInterpretationForDate(String dateStr) {
-    final seed = int.parse(dateStr.replaceAll('-', ''));
-    final rand = Random(seed);
-    return interpretationKeys[rand.nextInt(interpretationKeys.length)];
-  }
+  String _todayString() => todayString();
 }
 
 final todaysKuralProvider =

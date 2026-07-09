@@ -4,7 +4,8 @@ import 'aathichudi.dart';
 
 enum ContentKind { kural, aathichudi }
 
-const List<String> kuralInterpretationKeys = ['mv', 'sp', 'mk'];
+// Fixed daily carousel order: Solomon Pappaiya → Kalaignar → Varadarajan.
+const List<String> kuralInterpretationKeys = ['sp', 'mk', 'mv'];
 const Map<String, String> kuralInterpretationAuthors = {
   'mv': 'மு. வரதராசன்',
   'sp': 'சாலமன் பாப்பையா',
