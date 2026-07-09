@@ -33,7 +33,7 @@ class _AppBootstrapState extends ConsumerState<_AppBootstrap> {
 
     final notifications = NotificationService();
     await notifications.init();
-    await notifications.scheduleDaily730();
+    await notifications.scheduleDailyReminder();
   }
 
   @override

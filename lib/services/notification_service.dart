@@ -32,15 +32,15 @@ class NotificationService {
         ?.requestNotificationsPermission();
   }
 
-  Future<void> scheduleDaily730() async {
+  Future<void> scheduleDailyReminder() async {
     final now = tz.TZDateTime.now(tz.local);
     var scheduled = tz.TZDateTime(
       tz.local,
       now.year,
       now.month,
       now.day,
-      7,
-      30,
+      8,
+      5,
     );
     if (scheduled.isBefore(now)) {
       scheduled = scheduled.add(const Duration(days: 1));

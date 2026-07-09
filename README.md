@@ -62,13 +62,16 @@ assets/data/
   app open:
   - If already served today → re-shows the same kural (so reopening the
     app mid-day doesn't skip ahead).
-  - Otherwise → advances to `lastKural + 1` within the selected chapter,
-    looping back to the chapter's `start` if the chapter is finished.
+  - Otherwise → advances to `lastKural + 1`. Because kural numbers are
+    contiguous across the whole text, once a chapter is finished this
+    flows straight into the next chapter (e.g. chapter 40 → 41), wrapping
+    back to kural 1 after the final kural. The displayed chapter is
+    derived from the current kural.
   - The interpretation (`mv` / `sp` / `mk`) is chosen with a date-seeded
     random pick, so it's stable for the whole day but different from
     yesterday.
 
-- The **7:30 AM notification** is just a nudge (`zonedSchedule` with
+- The **8:05 AM notification** is just a nudge (`zonedSchedule` with
   `matchDateTimeComponents: DateTimeComponents.time` — repeats daily).
   The actual "advance to next kural" happens the moment the user opens
   the app that day, not inside a background task. This avoids needing
@@ -77,9 +80,9 @@ assets/data/
 
 ## Things to double check / decide
 
-- **Chapter-end behavior**: currently loops back to the chapter's start
-  once finished. If you'd rather prompt the user to pick a new chapter
-  when one finishes, that's a small change in `TodaysKuralNotifier.build()`.
+- **Chapter-end behavior**: once a chapter finishes, the daily flow
+  continues into the next chapter automatically (see
+  `TodaysKuralNotifier.build()`).
 - **Timezone accuracy**: the notification uses the device's local
   timezone via the `timezone` package's `tz.local`. If you want to pin
   it to a specific zone (e.g. always IST regardless of device locale),

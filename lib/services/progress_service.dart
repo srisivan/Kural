@@ -23,6 +23,12 @@ class ProgressService {
     await _box.delete('lastServedDate');
   }
 
+  /// Updates which chapter we're currently in WITHOUT resetting progress.
+  /// Used when the daily flow crosses from one chapter into the next.
+  Future<void> syncCurrentChapter(int chapterNumber) async {
+    await _box.put('selectedChapter', chapterNumber);
+  }
+
   int? get lastServedKuralNumber => _box.get('lastServedKuralNum') as int?;
   String? get lastServedDate => _box.get('lastServedDate') as String?;
   String? get lastInterpretation => _box.get('lastInterpretation') as String?;

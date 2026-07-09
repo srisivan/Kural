@@ -32,6 +32,26 @@ class TodaysKural {
   });
 }
 
+/// Builds a [TodaysKural] bundle for an arbitrary kural number — used by the
+/// (read-only) explore screens, so they can reuse the shareable cards without
+/// touching the daily progress. Defaults to the 'mv' interpretation.
+TodaysKural buildKuralView(
+  List<Kural> kurals,
+  List<Chapter> chapters,
+  int number, {
+  String interpretationKey = 'mv',
+}) {
+  final kural = kurals.firstWhere((k) => k.number == number);
+  final chapter = chapters
+      .firstWhere((c) => number >= c.start && number <= c.end);
+  return TodaysKural(
+    kural: kural,
+    interpretationKey: interpretationKey,
+    interpretationText: kural.interpretation(interpretationKey),
+    chapter: chapter,
+  );
+}
+
 /// Notifier that decides which kural to show today, advancing sequentially
 /// through the selected chapter and picking a random interpretation type
 /// deterministically for the day (stable across rebuilds).
@@ -42,12 +62,14 @@ class TodaysKuralNotifier extends AsyncNotifier<TodaysKural> {
     final chapters = await ref.watch(chaptersProvider.future);
     final progress = ref.read(progressServiceProvider);
 
-    final chapterNumber = progress.selectedChapter ?? chapters.first.number;
-    final chapter = chapters.firstWhere((c) => c.number == chapterNumber);
+    final startChapterNumber = progress.selectedChapter ?? chapters.first.number;
 
     final todayStr = _todayString();
     final lastDate = progress.lastServedDate;
     final lastKuralNum = progress.lastServedKuralNumber;
+
+    final int firstKural = kurals.first.number; // 1
+    final int lastKural = kurals.last.number; // 1330
 
     int nextKuralNumber;
     String interpretationKey;
@@ -57,11 +79,17 @@ class TodaysKuralNotifier extends AsyncNotifier<TodaysKural> {
       nextKuralNumber = lastKuralNum;
       interpretationKey = progress.lastInterpretation ?? 'mv';
     } else {
-      if (lastKuralNum == null || lastKuralNum >= chapter.end) {
-        // First run, or chapter just finished -> loop back to chapter start.
-        nextKuralNumber = chapter.start;
+      if (lastKuralNum == null) {
+        // First run — start at the chosen chapter's first kural.
+        final startChapter =
+            chapters.firstWhere((c) => c.number == startChapterNumber);
+        nextKuralNumber = startChapter.start;
       } else {
+        // Continue to the next kural. Because kural numbers are contiguous
+        // across the whole text, this naturally flows into the next chapter
+        // once the current one is finished; wrap to the start after 1330.
         nextKuralNumber = lastKuralNum + 1;
+        if (nextKuralNumber > lastKural) nextKuralNumber = firstKural;
       }
       interpretationKey = _pickInterpretationForDate(todayStr);
       await progress.saveServed(
@@ -69,6 +97,17 @@ class TodaysKuralNotifier extends AsyncNotifier<TodaysKural> {
         date: todayStr,
         interpretationKey: interpretationKey,
       );
+    }
+
+    // The chapter that actually contains today's kural — this may differ from
+    // the originally chosen chapter once the flow has crossed into the next.
+    final chapter = chapters.firstWhere(
+        (c) => nextKuralNumber >= c.start && nextKuralNumber <= c.end);
+
+    // Keep the stored chapter in sync (so the picker highlights where we are)
+    // without resetting progress within it.
+    if (progress.selectedChapter != chapter.number) {
+      await progress.syncCurrentChapter(chapter.number);
     }
 
     final kural = kurals.firstWhere((k) => k.number == nextKuralNumber);
