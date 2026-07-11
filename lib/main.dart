@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'providers/kural_providers.dart';
 import 'screens/home_screen.dart';
-import 'services/notification_service.dart';
 import 'theme.dart';
 
 void main() async {
@@ -31,7 +30,7 @@ class _AppBootstrapState extends ConsumerState<_AppBootstrap> {
   Future<void> _init() async {
     await ref.read(progressServiceProvider).init();
 
-    final notifications = NotificationService();
+    final notifications = ref.read(notificationServiceProvider);
     await notifications.init();
     await notifications.scheduleDailyReminder();
   }

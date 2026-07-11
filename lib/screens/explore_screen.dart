@@ -12,9 +12,8 @@ import '../theme.dart';
 import 'chapter_kurals_screen.dart';
 import 'content_detail_screen.dart';
 
-/// The (supplementary) knowledgebase browser. Mode-aware: browses chapters for
-/// Thirukkural, or a flat list for Aathichudi. Read-only — never touches the
-/// daily progress.
+/// Mode-aware knowledgebase browser. Chapters for Thirukkural, a flat list for
+/// Aathichudi. The palette follows the active text. Read-only.
 class ExploreScreen extends ConsumerStatefulWidget {
   const ExploreScreen({super.key});
 
@@ -69,35 +68,37 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
   Widget build(BuildContext context) {
     final mode = ref.watch(contentModeProvider);
     final isKural = mode == 'kural';
+    final palette = paletteFor(!isKural);
 
     return Scaffold(
-      backgroundColor: kBrandBlue,
+      backgroundColor: palette.background,
       appBar: AppBar(
-        backgroundColor: kBrandBlue,
-        foregroundColor: Colors.white,
+        backgroundColor: palette.background,
+        foregroundColor: palette.ink,
         elevation: 0,
         title: Text(isKural ? 'ஆராய் · திருக்குறள்' : 'ஆராய் · ஆத்திசூடி',
             style: GoogleFonts.anekTamil()),
       ),
-      body: isKural ? _buildKural() : _buildAathichudi(),
+      body: isKural ? _buildKural(palette) : _buildAathichudi(palette),
     );
   }
 
   // ---- Thirukkural: chapters ----
-  Widget _buildKural() {
+  Widget _buildKural(ContentPalette palette) {
     final chaptersAsync = ref.watch(chaptersProvider);
     final kuralsAsync = ref.watch(kuralsProvider);
 
     return chaptersAsync.when(
       loading: () =>
-          const Center(child: CircularProgressIndicator(color: Colors.white)),
-      error: (e, st) => _err('$e'),
+          Center(child: CircularProgressIndicator(color: palette.ink)),
+      error: (e, st) => _err('$e', palette),
       data: (chapters) {
         final kurals = kuralsAsync.valueOrNull ?? const [];
         final total = kurals.isEmpty ? 1330 : kurals.length;
         return Column(
           children: [
             _controls(
+              palette: palette,
               jumpHint: 'Go to kural # (1–$total)',
               onSurprise1: kurals.isEmpty
                   ? null
@@ -126,6 +127,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
                 itemBuilder: (context, index) {
                   final c = chapters[index];
                   return _listTile(
+                    palette: palette,
                     number: '${c.number}',
                     title: c.name,
                     subtitle:
@@ -144,17 +146,18 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
   }
 
   // ---- Aathichudi: flat list ----
-  Widget _buildAathichudi() {
+  Widget _buildAathichudi(ContentPalette palette) {
     final listAsync = ref.watch(aathichudiProvider);
     return listAsync.when(
       loading: () =>
-          const Center(child: CircularProgressIndicator(color: Colors.white)),
-      error: (e, st) => _err('$e'),
+          Center(child: CircularProgressIndicator(color: palette.ink)),
+      error: (e, st) => _err('$e', palette),
       data: (list) {
         final total = list.length;
         return Column(
           children: [
             _controls(
+              palette: palette,
               jumpHint: 'Go to # (1–$total)',
               onSurprise1: () => _openAathi(list, _random.nextInt(total) + 1),
               surprise1Label: 'Surprise me',
@@ -175,6 +178,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
                 itemBuilder: (context, index) {
                   final a = list[index];
                   return _listTile(
+                    palette: palette,
                     number: '${a.number}',
                     title: a.poem,
                     subtitle: a.paraphrase,
@@ -190,6 +194,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
   }
 
   Widget _controls({
+    required ContentPalette palette,
     required String jumpHint,
     required VoidCallback? onSurprise1,
     required String surprise1Label,
@@ -208,6 +213,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
             children: [
               Expanded(
                 child: _ActionButton(
+                  palette: palette,
                   icon: surprise1Icon,
                   label: surprise1Label,
                   onTap: onSurprise1,
@@ -217,6 +223,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: _ActionButton(
+                    palette: palette,
                     icon: surprise2Icon,
                     label: surprise2Label,
                     onTap: onSurprise2,
@@ -233,28 +240,26 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
                   controller: _numberController,
                   keyboardType: TextInputType.number,
                   inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                  style: const TextStyle(color: Colors.white),
-                  cursorColor: Colors.white,
+                  style: TextStyle(color: palette.ink),
+                  cursorColor: palette.ink,
                   onSubmitted: (_) => onJump(),
                   decoration: InputDecoration(
                     hintText: jumpHint,
-                    hintStyle: TextStyle(color: Colors.white.withOpacity(0.5)),
-                    prefixIcon:
-                        Icon(Icons.tag, color: Colors.white.withOpacity(0.7)),
+                    hintStyle: TextStyle(color: palette.inkA(0.5)),
+                    prefixIcon: Icon(Icons.tag, color: palette.inkA(0.7)),
                     filled: true,
-                    fillColor: kTileFill,
+                    fillColor: palette.tileFill,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(14),
-                      borderSide: BorderSide(color: kTileBorder),
+                      borderSide: BorderSide(color: palette.tileBorder),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(14),
-                      borderSide: BorderSide(color: kTileBorder),
+                      borderSide: BorderSide(color: palette.tileBorder),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(14),
-                      borderSide:
-                          BorderSide(color: Colors.white.withOpacity(0.5)),
+                      borderSide: BorderSide(color: palette.inkA(0.5)),
                     ),
                   ),
                 ),
@@ -264,7 +269,8 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
                 height: 52,
                 child: FilledButton(
                   style: FilledButton.styleFrom(
-                      backgroundColor: Colors.white, foregroundColor: kBrandBlue),
+                      backgroundColor: palette.accent,
+                      foregroundColor: palette.onAccent),
                   onPressed: onJump,
                   child: const Text('Go'),
                 ),
@@ -279,7 +285,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
               child: Text(
                 sectionLabel,
                 style: GoogleFonts.anekTamil(
-                  color: Colors.white.withOpacity(0.6),
+                  color: palette.inkA(0.6),
                   fontSize: 13,
                   letterSpacing: 1,
                   fontWeight: FontWeight.w600,
@@ -293,6 +299,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
   }
 
   Widget _listTile({
+    required ContentPalette palette,
     required String number,
     required String title,
     required String subtitle,
@@ -301,23 +308,23 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
-        color: kTileFill,
+        color: palette.tileFill,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: kTileBorder),
+        border: Border.all(color: palette.tileBorder),
       ),
       child: ListTile(
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
         leading: CircleAvatar(
-          backgroundColor: Colors.white,
-          foregroundColor: kBrandBlue,
+          backgroundColor: palette.accent,
+          foregroundColor: palette.onAccent,
           child: Text(number,
               style: const TextStyle(fontWeight: FontWeight.w600)),
         ),
         title: Text(
           title,
           style: GoogleFonts.anekTamil(
-              color: Colors.white, fontSize: 17, fontWeight: FontWeight.w600),
+              color: palette.ink, fontSize: 17, fontWeight: FontWeight.w600),
         ),
         subtitle: subtitle.isEmpty
             ? null
@@ -328,33 +335,35 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen> {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.anekTamil(
-                      color: Colors.white.withOpacity(0.6), fontSize: 12.5),
+                      color: palette.inkA(0.6), fontSize: 12.5),
                 ),
               ),
-        trailing:
-            Icon(Icons.chevron_right, color: Colors.white.withOpacity(0.5)),
+        trailing: Icon(Icons.chevron_right, color: palette.inkA(0.5)),
         onTap: onTap,
       ),
     );
   }
 
-  Widget _err(String e) => Center(
-        child: Text('Error: $e',
-            style: const TextStyle(color: Colors.white70)),
+  Widget _err(String e, ContentPalette palette) => Center(
+        child: Text('Error: $e', style: TextStyle(color: palette.inkA(0.7))),
       );
 }
 
 class _ActionButton extends StatelessWidget {
+  final ContentPalette palette;
   final IconData icon;
   final String label;
   final VoidCallback? onTap;
   const _ActionButton(
-      {required this.icon, required this.label, required this.onTap});
+      {required this.palette,
+      required this.icon,
+      required this.label,
+      required this.onTap});
 
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: kTileFill,
+      color: palette.tileFill,
       borderRadius: BorderRadius.circular(14),
       child: InkWell(
         borderRadius: BorderRadius.circular(14),
@@ -363,17 +372,17 @@ class _ActionButton extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: kTileBorder),
+            border: Border.all(color: palette.tileBorder),
           ),
           child: Column(
             children: [
-              Icon(icon, color: Colors.white, size: 26),
+              Icon(icon, color: palette.ink, size: 26),
               const SizedBox(height: 8),
               Text(
                 label,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
-                    color: Colors.white,
+                style: TextStyle(
+                    color: palette.ink,
                     fontSize: 13,
                     fontWeight: FontWeight.w600),
               ),

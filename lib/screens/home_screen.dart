@@ -18,7 +18,6 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 class _HomeScreenState extends ConsumerState<HomeScreen>
     with ContentShareActions {
-  // Interpretation index the user swiped to, per track.
   int? _kuralIndex;
   int _aathiIndex = 0;
 
@@ -27,7 +26,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     return i < 0 ? 0 : i;
   }
 
-  /// The content currently on screen — used when the user taps Share.
+  Future<void> _sendTestNotification() async {
+    final svc = ref.read(notificationServiceProvider);
+    final enabled = await svc.notificationsEnabled();
+    await svc.showTestNotification();
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(enabled
+          ? 'Test sent — check your notification shade.'
+          : 'Notifications are DISABLED for this app. Enable them in Settings → Apps → Kural → Notifications.'),
+      duration: const Duration(seconds: 5),
+    ));
+  }
+
   CardContent? _currentContent() {
     final mode = ref.read(contentModeProvider);
     if (mode == 'kural') {
@@ -46,28 +57,30 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   Widget build(BuildContext context) {
     final mode = ref.watch(contentModeProvider);
     final isKural = mode == 'kural';
+    final palette = paletteFor(!isKural);
 
     return Scaffold(
-      backgroundColor: kBrandBlue,
+      backgroundColor: palette.background,
       appBar: AppBar(
-        backgroundColor: kBrandBlue,
+        backgroundColor: palette.background,
         elevation: 0,
-        foregroundColor: Colors.white,
+        foregroundColor: palette.ink,
         titleSpacing: 12,
         title: _ModeTitleTile(
           title: isKural ? 'திருக்குறள்' : 'ஆத்திசூடி',
+          palette: palette,
           onToggle: () => ref.read(contentModeProvider.notifier).toggle(),
         ),
         actions: [
           if (shareBusy)
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Center(
                 child: SizedBox(
                   width: 18,
                   height: 18,
                   child: CircularProgressIndicator(
-                      strokeWidth: 2, color: Colors.white),
+                      strokeWidth: 2, color: palette.ink),
                 ),
               ),
             )
@@ -75,11 +88,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
             PopupMenuButton<String>(
               icon: const Icon(Icons.more_vert),
               tooltip: 'Menu',
+              color: palette.background,
+              surfaceTintColor: Colors.transparent,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+                side: BorderSide(color: palette.tileBorder),
+              ),
               onSelected: (value) {
                 switch (value) {
                   case 'share':
                     final content = _currentContent();
-                    if (content != null) openShareSheet(content);
+                    if (content != null) openShareSheet(content, palette);
                     break;
                   case 'explore':
                     Navigator.of(context).push(MaterialPageRoute(
@@ -89,48 +108,66 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                     Navigator.of(context).push(MaterialPageRoute(
                         builder: (_) => const ChapterPickerScreen()));
                     break;
+                  case 'test':
+                    _sendTestNotification();
+                    break;
                 }
               },
               itemBuilder: (ctx) => [
-                const PopupMenuItem(
+                PopupMenuItem(
                   value: 'share',
-                  child: _MenuRow(icon: Icons.share_outlined, label: 'Share'),
+                  child: _MenuRow(
+                      icon: Icons.share_outlined,
+                      label: 'Share',
+                      palette: palette),
                 ),
-                const PopupMenuItem(
+                PopupMenuItem(
                   value: 'explore',
-                  child:
-                      _MenuRow(icon: Icons.explore_outlined, label: 'Explore'),
+                  child: _MenuRow(
+                      icon: Icons.explore_outlined,
+                      label: 'Explore',
+                      palette: palette),
                 ),
                 if (isKural)
-                  const PopupMenuItem(
+                  PopupMenuItem(
                     value: 'chapter',
                     child: _MenuRow(
                         icon: Icons.menu_book_outlined,
-                        label: 'Choose daily chapter'),
+                        label: 'Choose daily chapter',
+                        palette: palette),
                   ),
+                PopupMenuItem(
+                  value: 'test',
+                  child: _MenuRow(
+                      icon: Icons.notifications_active_outlined,
+                      label: 'Test notification',
+                      palette: palette),
+                ),
               ],
             ),
         ],
       ),
       body: SafeArea(
-        child: isKural ? _buildKural() : _buildAathichudi(),
+        child: isKural ? _buildKural(palette) : _buildAathichudi(palette),
       ),
     );
   }
 
-  Widget _buildKural() {
+  Widget _buildKural(ContentPalette palette) {
     final todays = ref.watch(todaysKuralProvider);
     return todays.when(
-      loading: () =>
-          const Center(child: CircularProgressIndicator(color: Colors.white)),
-      error: (e, st) => _errorText('$e'),
+      loading: () => Center(
+          child: CircularProgressIndicator(color: palette.ink)),
+      error: (e, st) => _errorText('$e', palette),
       data: (t) {
         final index = _kuralIndex ?? _kuralDefaultIndex(t);
-        final content = CardContent.fromKural(t.kural, t.chapter, selectedIndex: index);
+        final content =
+            CardContent.fromKural(t.kural, t.chapter, selectedIndex: index);
         return Center(
           child: SingleChildScrollView(
             child: ContentCarouselView(
               content: content,
+              palette: palette,
               onIndexChanged: (i) => setState(() => _kuralIndex = i),
             ),
           ),
@@ -139,15 +176,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     );
   }
 
-  Widget _buildAathichudi() {
+  Widget _buildAathichudi(ContentPalette palette) {
     final todays = ref.watch(todaysAathichudiProvider);
     return todays.when(
-      loading: () =>
-          const Center(child: CircularProgressIndicator(color: Colors.white)),
-      error: (e, st) => _errorText('$e'),
+      loading: () => Center(
+          child: CircularProgressIndicator(color: palette.ink)),
+      error: (e, st) => _errorText('$e', palette),
       data: (a) {
         if (a.needsEndChoice || a.item == null) {
           return _EndOfSetPrompt(
+            palette: palette,
             onChoose: (m) =>
                 ref.read(todaysAathichudiProvider.notifier).chooseEndMode(m),
           );
@@ -158,6 +196,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           child: SingleChildScrollView(
             child: ContentCarouselView(
               content: content,
+              palette: palette,
               onIndexChanged: (i) => setState(() => _aathiIndex = i),
             ),
           ),
@@ -166,17 +205,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     );
   }
 
-  Widget _errorText(String e) => Center(
-        child: Text('Error: $e',
-            style: const TextStyle(color: Colors.white70)),
+  Widget _errorText(String e, ContentPalette palette) => Center(
+        child: Text('Error: $e', style: TextStyle(color: palette.inkA(0.7))),
       );
 }
 
 /// The translucent title chip in the header. Swipe or tap to switch texts.
 class _ModeTitleTile extends StatelessWidget {
   final String title;
+  final ContentPalette palette;
   final VoidCallback onToggle;
-  const _ModeTitleTile({required this.title, required this.onToggle});
+  const _ModeTitleTile(
+      {required this.title, required this.palette, required this.onToggle});
 
   @override
   Widget build(BuildContext context) {
@@ -187,19 +227,20 @@ class _ModeTitleTile extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
-          color: kTileFill,
+          color: palette.tileFill,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: kTileBorder),
+          border: Border.all(color: palette.tileBorder),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(title,
                 style: GoogleFonts.anekTamil(
-                    fontSize: 18, fontWeight: FontWeight.w600)),
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: palette.ink)),
             const SizedBox(width: 8),
-            Icon(Icons.swap_horiz,
-                size: 18, color: Colors.white.withOpacity(0.7)),
+            Icon(Icons.swap_horiz, size: 18, color: palette.inkA(0.7)),
           ],
         ),
       ),
@@ -208,8 +249,9 @@ class _ModeTitleTile extends StatelessWidget {
 }
 
 class _EndOfSetPrompt extends StatelessWidget {
+  final ContentPalette palette;
   final ValueChanged<String> onChoose;
-  const _EndOfSetPrompt({required this.onChoose});
+  const _EndOfSetPrompt({required this.palette, required this.onChoose});
 
   @override
   Widget build(BuildContext context) {
@@ -219,13 +261,12 @@ class _EndOfSetPrompt extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.emoji_events_outlined,
-                color: Colors.white, size: 48),
+            Icon(Icons.emoji_events_outlined, color: palette.ink, size: 48),
             const SizedBox(height: 16),
             Text(
               'ஆத்திசூடி முற்றிற்று!',
               style: GoogleFonts.anekTamil(
-                  color: Colors.white,
+                  color: palette.ink,
                   fontSize: 20,
                   fontWeight: FontWeight.w700),
             ),
@@ -233,14 +274,15 @@ class _EndOfSetPrompt extends StatelessWidget {
             Text(
               "You've been through every aathichudi. What next?",
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.white.withOpacity(0.75)),
+              style: TextStyle(color: palette.inkA(0.75)),
             ),
             const SizedBox(height: 24),
             SizedBox(
               width: double.infinity,
               child: FilledButton.icon(
                 style: FilledButton.styleFrom(
-                    backgroundColor: Colors.white, foregroundColor: kBrandBlue),
+                    backgroundColor: palette.accent,
+                    foregroundColor: palette.onAccent),
                 icon: const Icon(Icons.replay),
                 label: const Text('Repeat from the start'),
                 onPressed: () => onChoose('repeat'),
@@ -251,8 +293,8 @@ class _EndOfSetPrompt extends StatelessWidget {
               width: double.infinity,
               child: OutlinedButton.icon(
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.white,
-                  side: BorderSide(color: Colors.white.withOpacity(0.5)),
+                  foregroundColor: palette.ink,
+                  side: BorderSide(color: palette.inkA(0.5)),
                 ),
                 icon: const Icon(Icons.shuffle),
                 label: const Text('Randomize each day'),
@@ -270,15 +312,17 @@ class _EndOfSetPrompt extends StatelessWidget {
 class _MenuRow extends StatelessWidget {
   final IconData icon;
   final String label;
-  const _MenuRow({required this.icon, required this.label});
+  final ContentPalette palette;
+  const _MenuRow(
+      {required this.icon, required this.label, required this.palette});
 
   @override
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(icon, size: 20, color: Colors.white),
+        Icon(icon, size: 20, color: palette.ink),
         const SizedBox(width: 12),
-        Text(label),
+        Text(label, style: TextStyle(color: palette.ink)),
       ],
     );
   }

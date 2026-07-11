@@ -7,14 +7,32 @@ class NotificationService {
       FlutterLocalNotificationsPlugin();
 
   static const int dailyKuralNotificationId = 100;
+  static const int _testNotificationId = 999;
+  static const String _channelId = 'daily_kural_channel';
+  static const String _channelName = 'Daily Kural';
 
   // Daily reminder time, pinned to India Standard Time.
   static const int _hour = 8;
   static const int _minute = 0;
 
+  static const AndroidNotificationDetails _androidDetails =
+      AndroidNotificationDetails(
+    _channelId,
+    _channelName,
+    channelDescription: 'Daily Thirukkural reminder',
+    importance: Importance.max,
+    priority: Priority.high,
+  );
+  static const NotificationDetails _details = NotificationDetails(
+    android: _androidDetails,
+    iOS: DarwinNotificationDetails(),
+  );
+
+  AndroidFlutterLocalNotificationsPlugin? get _android =>
+      _plugin.resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin>();
+
   Future<void> init() async {
-    // Loads the tz database so zonedSchedule can work. The reminder is pinned
-    // to IST (Asia/Kolkata) below, so we don't rely on the device's zone.
     tzdata.initializeTimeZones();
 
     const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
@@ -23,19 +41,40 @@ class NotificationService {
       requestBadgePermission: true,
       requestSoundPermission: true,
     );
-    const initSettings =
-        InitializationSettings(android: androidInit, iOS: iosInit);
+    await _plugin.initialize(
+      const InitializationSettings(android: androidInit, iOS: iosInit),
+    );
 
-    await _plugin.initialize(initSettings);
+    // Create the channel up-front so notifications can post on Android 8+.
+    await _android?.createNotificationChannel(const AndroidNotificationChannel(
+      _channelId,
+      _channelName,
+      description: 'Daily Thirukkural reminder',
+      importance: Importance.max,
+    ));
 
-    // Android 13+ needs explicit runtime permission to post notifications.
-    await _plugin
-        .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>()
-        ?.requestNotificationsPermission();
+    // Runtime permission (Android 13+) and exact-alarm permission (12+/14).
+    await _android?.requestNotificationsPermission();
+    await _android?.requestExactAlarmsPermission();
+  }
+
+  /// Whether the OS currently allows this app to post notifications.
+  Future<bool> notificationsEnabled() async =>
+      await _android?.areNotificationsEnabled() ?? true;
+
+  /// Fires a notification immediately — used to verify the pipeline works.
+  Future<void> showTestNotification() async {
+    await _plugin.show(
+      _testNotificationId,
+      'இன்றைய திருக்குறள்',
+      'Test notification — notifications are working ✅',
+      _details,
+    );
   }
 
   Future<void> scheduleDailyReminder() async {
+    await _plugin.cancel(dailyKuralNotificationId); // clear any stale schedule
+
     // Pin to 8:00 AM IST regardless of the device's timezone.
     final ist = tz.getLocation('Asia/Kolkata');
     final now = tz.TZDateTime.now(ist);
@@ -45,34 +84,27 @@ class NotificationService {
       scheduled = scheduled.add(const Duration(days: 1));
     }
 
+    // Prefer exact; if the OS refuses exact alarms, fall back to inexact so a
+    // reminder still fires (just within a looser window).
     try {
-      await _plugin.zonedSchedule(
-        dailyKuralNotificationId,
-        'இன்றைய திருக்குறள்',
-        'Tap to read today\'s kural',
-        scheduled,
-        const NotificationDetails(
-          android: AndroidNotificationDetails(
-            'daily_kural_channel',
-            'Daily Kural',
-            channelDescription: 'Daily Thirukkural reminder',
-            importance: Importance.high,
-            priority: Priority.high,
-          ),
-          iOS: DarwinNotificationDetails(),
-        ),
-        // Inexact avoids the SCHEDULE_EXACT_ALARM permission (which Android 14
-        // denies by default, making exact scheduling throw). A daily nudge
-        // doesn't need to-the-second precision, and this is more reliable
-        // across OEMs.
-        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-        uiLocalNotificationDateInterpretation:
-            UILocalNotificationDateInterpretation.absoluteTime,
-        matchDateTimeComponents: DateTimeComponents.time, // repeats daily
-      );
+      await _schedule(scheduled, AndroidScheduleMode.exactAllowWhileIdle);
     } catch (_) {
-      // Scheduling is a best-effort nudge — never let it break app startup.
+      await _schedule(scheduled, AndroidScheduleMode.inexactAllowWhileIdle);
     }
+  }
+
+  Future<void> _schedule(tz.TZDateTime when, AndroidScheduleMode mode) {
+    return _plugin.zonedSchedule(
+      dailyKuralNotificationId,
+      'இன்றைய திருக்குறள்',
+      'Tap to read today\'s kural',
+      when,
+      _details,
+      androidScheduleMode: mode,
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime,
+      matchDateTimeComponents: DateTimeComponents.time, // repeats daily
+    );
   }
 
   Future<void> cancelAll() => _plugin.cancelAll();

@@ -6,11 +6,12 @@ import 'package:share_plus/share_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:gal/gal.dart';
 import '../models/card_content.dart';
+import '../theme.dart';
 import '../widgets/content_card.dart';
 
 /// Shared share/download behaviour for any screen showing a [CardContent].
-/// Both actions render the same clean [ContentCard] off-screen using whichever
-/// interpretation the passed content carries (the one the user landed on).
+/// Both actions render the same clean [ContentCard] off-screen (in the palette
+/// for that text) using whichever interpretation the content carries.
 mixin ContentShareActions<T extends StatefulWidget> on State<T> {
   final ScreenshotController _controller = ScreenshotController();
   bool shareBusy = false;
@@ -28,9 +29,9 @@ mixin ContentShareActions<T extends StatefulWidget> on State<T> {
         .showSnackBar(SnackBar(content: Text(msg)));
   }
 
-  Future<Uint8List> _renderCard(CardContent content) {
+  Future<Uint8List> _renderCard(CardContent content, ContentPalette palette) {
     return _controller.captureFromWidget(
-      ContentCard(content: content),
+      ContentCard(content: content, palette: palette),
       context: context,
       targetSize: const Size(400, 3000),
       pixelRatio: 3.0,
@@ -50,14 +51,16 @@ mixin ContentShareActions<T extends StatefulWidget> on State<T> {
     }
   }
 
-  Future<void> _share(CardContent content) => _run(() async {
-        final bytes = await _renderCard(content);
+  Future<void> _share(CardContent content, ContentPalette palette) =>
+      _run(() async {
+        final bytes = await _renderCard(content, palette);
         final file = await _writeTemp(bytes, '${content.shareFileStem}.png');
         await Share.shareXFiles([XFile(file.path)], text: content.title);
       });
 
-  Future<void> _download(CardContent content) => _run(() async {
-        final bytes = await _renderCard(content);
+  Future<void> _download(CardContent content, ContentPalette palette) =>
+      _run(() async {
+        final bytes = await _renderCard(content, palette);
         try {
           await Gal.putImageBytes(bytes, album: 'Kural');
           _snack('Saved to your gallery (Kural album)');
@@ -66,36 +69,45 @@ mixin ContentShareActions<T extends StatefulWidget> on State<T> {
         }
       });
 
-  void openShareSheet(CardContent content) {
+  void openShareSheet(CardContent content, ContentPalette palette) {
     showModalBottomSheet(
       context: context,
-      showDragHandle: true,
+      backgroundColor: palette.background,
       builder: (ctx) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            Container(
+              margin: const EdgeInsets.only(top: 10, bottom: 4),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: palette.inkA(0.3),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
             ListTile(
-              iconColor: Colors.white,
-              textColor: Colors.white,
+              iconColor: palette.ink,
+              textColor: palette.ink,
               leading: const Icon(Icons.share_outlined),
               title: const Text('Share'),
               subtitle: Text('Post as a WhatsApp status, or send anywhere',
-                  style: TextStyle(color: Colors.white.withOpacity(0.6))),
+                  style: TextStyle(color: palette.inkA(0.6))),
               onTap: () {
                 Navigator.pop(ctx);
-                _share(content);
+                _share(content, palette);
               },
             ),
             ListTile(
-              iconColor: Colors.white,
-              textColor: Colors.white,
+              iconColor: palette.ink,
+              textColor: palette.ink,
               leading: const Icon(Icons.download_outlined),
               title: const Text('Download'),
               subtitle: Text('Save the card to your gallery',
-                  style: TextStyle(color: Colors.white.withOpacity(0.6))),
+                  style: TextStyle(color: palette.inkA(0.6))),
               onTap: () {
                 Navigator.pop(ctx);
-                _download(content);
+                _download(content, palette);
               },
             ),
           ],

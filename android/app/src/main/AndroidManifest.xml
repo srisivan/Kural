@@ -7,6 +7,10 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <!-- Lets the daily reminder be re-scheduled after a device reboot. -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <!-- Exact daily alarm at 8:00 AM. USE_EXACT_ALARM is auto-granted;
+         SCHEDULE_EXACT_ALARM is the requestable variant for newer Android. -->
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
     <application
         android:label="Kural"
         android:name="${applicationName}"

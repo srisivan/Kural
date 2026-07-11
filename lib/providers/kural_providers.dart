@@ -5,9 +5,11 @@ import '../models/chapter.dart';
 import '../models/aathichudi.dart';
 import '../services/data_service.dart';
 import '../services/progress_service.dart';
+import '../services/notification_service.dart';
 
 final dataServiceProvider = Provider((ref) => DataService());
 final progressServiceProvider = Provider((ref) => ProgressService());
+final notificationServiceProvider = Provider((ref) => NotificationService());
 
 final kuralsProvider = FutureProvider<List<Kural>>((ref) async {
   return ref.read(dataServiceProvider).loadKurals();

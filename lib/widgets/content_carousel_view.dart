@@ -3,33 +3,36 @@ import '../models/card_content.dart';
 import '../theme.dart';
 import 'content_card.dart';
 
-/// The on-screen view: the verse tile plus a swipeable / arrow-navigable
-/// interpretation. The index the user lands on is reported via
+/// The on-screen view: the verse tile plus a swipeable interpretation with an
+/// in-tile page indicator. The index the user lands on is reported via
 /// [onIndexChanged] so the screen shares/downloads that same one.
 class ContentCarouselView extends StatelessWidget {
   final CardContent content;
+  final ContentPalette palette;
   final ValueChanged<int> onIndexChanged;
 
   const ContentCarouselView({
     super.key,
     required this.content,
+    required this.palette,
     required this.onIndexChanged,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: kBrandBlue,
+      color: palette.background,
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 24),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          PoemTile(content: content),
+          PoemTile(content: content, palette: palette),
           const SizedBox(height: 18),
           InterpretationCarousel(
             key: ValueKey('${content.kind}_${content.itemNumber}'),
             interpretations: content.interpretations,
+            palette: palette,
             initialIndex: content.selectedIndex,
             onIndexChanged: onIndexChanged,
           ),
@@ -39,17 +42,18 @@ class ContentCarouselView extends StatelessWidget {
   }
 }
 
-/// Swipe or tap the small side arrows to move between interpretations. The
-/// tile sizes to its content (no fixed height) so the full text is visible;
-/// navigation loops from the last back to the first.
+/// Swipe to move between interpretations; the tile keeps its full width and
+/// shows a page-indicator inside. Navigation loops from last back to first.
 class InterpretationCarousel extends StatefulWidget {
   final List<InterpretationEntry> interpretations;
+  final ContentPalette palette;
   final int initialIndex;
   final ValueChanged<int> onIndexChanged;
 
   const InterpretationCarousel({
     super.key,
     required this.interpretations,
+    required this.palette,
     required this.initialIndex,
     required this.onIndexChanged,
   });
@@ -82,7 +86,6 @@ class _InterpretationCarouselState extends State<InterpretationCarousel> {
   @override
   Widget build(BuildContext context) {
     final count = widget.interpretations.length;
-    // Swipe to navigate; the page-indicator dots live inside the tile.
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onHorizontalDragEnd: (details) {
@@ -121,6 +124,7 @@ class _InterpretationCarouselState extends State<InterpretationCarousel> {
         child: InterpretationTile(
           key: ValueKey(_index),
           entry: widget.interpretations[_index],
+          palette: widget.palette,
           dotCount: count,
           dotIndex: _index,
         ),
