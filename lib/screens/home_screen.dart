@@ -26,29 +26,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     return i < 0 ? 0 : i;
   }
 
-  Future<void> _sendTestNotification() async {
-    final svc = ref.read(notificationServiceProvider);
-    final enabled = await svc.notificationsEnabled();
-    await svc.showTestNotification();
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(enabled
-          ? 'Test sent — check your notification shade.'
-          : 'Notifications are DISABLED for this app. Enable them in Settings → Apps → Kural → Notifications.'),
-      duration: const Duration(seconds: 5),
-    ));
-  }
-
-  Future<void> _scheduleTestNotification() async {
-    await ref.read(notificationServiceProvider).scheduleTestInOneMinute();
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-      content: Text(
-          'Scheduled a test for ~1 minute from now. Lock the screen and wait.'),
-      duration: Duration(seconds: 5),
-    ));
-  }
-
   CardContent? _currentContent() {
     final mode = ref.read(contentModeProvider);
     if (mode == 'kural') {
@@ -118,12 +95,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                     Navigator.of(context).push(MaterialPageRoute(
                         builder: (_) => const ChapterPickerScreen()));
                     break;
-                  case 'test':
-                    _sendTestNotification();
-                    break;
-                  case 'test_scheduled':
-                    _scheduleTestNotification();
-                    break;
                 }
               },
               itemBuilder: (ctx) => [
@@ -149,20 +120,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                         label: 'Choose daily chapter',
                         palette: palette),
                   ),
-                PopupMenuItem(
-                  value: 'test',
-                  child: _MenuRow(
-                      icon: Icons.notifications_active_outlined,
-                      label: 'Test notification',
-                      palette: palette),
-                ),
-                PopupMenuItem(
-                  value: 'test_scheduled',
-                  child: _MenuRow(
-                      icon: Icons.schedule_outlined,
-                      label: 'Test scheduled (1 min)',
-                      palette: palette),
-                ),
               ],
             ),
         ],
