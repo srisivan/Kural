@@ -39,6 +39,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     ));
   }
 
+  Future<void> _scheduleTestNotification() async {
+    await ref.read(notificationServiceProvider).scheduleTestInOneMinute();
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+      content: Text(
+          'Scheduled a test for ~1 minute from now. Lock the screen and wait.'),
+      duration: Duration(seconds: 5),
+    ));
+  }
+
   CardContent? _currentContent() {
     final mode = ref.read(contentModeProvider);
     if (mode == 'kural') {
@@ -111,6 +121,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                   case 'test':
                     _sendTestNotification();
                     break;
+                  case 'test_scheduled':
+                    _scheduleTestNotification();
+                    break;
                 }
               },
               itemBuilder: (ctx) => [
@@ -141,6 +154,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                   child: _MenuRow(
                       icon: Icons.notifications_active_outlined,
                       label: 'Test notification',
+                      palette: palette),
+                ),
+                PopupMenuItem(
+                  value: 'test_scheduled',
+                  child: _MenuRow(
+                      icon: Icons.schedule_outlined,
+                      label: 'Test scheduled (1 min)',
                       palette: palette),
                 ),
               ],

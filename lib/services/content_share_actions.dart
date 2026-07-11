@@ -55,7 +55,9 @@ mixin ContentShareActions<T extends StatefulWidget> on State<T> {
       _run(() async {
         final bytes = await _renderCard(content, palette);
         final file = await _writeTemp(bytes, '${content.shareFileStem}.png');
-        await Share.shareXFiles([XFile(file.path)], text: content.title);
+        // e.g. "திருக்குறள் 394" / "ஆத்திசூடி 12"
+        await Share.shareXFiles([XFile(file.path)],
+            text: '${content.title} ${content.itemNumber}');
       });
 
   Future<void> _download(CardContent content, ContentPalette palette) =>

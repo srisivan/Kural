@@ -8,6 +8,7 @@ class NotificationService {
 
   static const int dailyKuralNotificationId = 100;
   static const int _testNotificationId = 999;
+  static const int _scheduledTestId = 998;
   static const String _channelId = 'daily_kural_channel';
   static const String _channelName = 'Daily Kural';
 
@@ -70,6 +71,31 @@ class NotificationService {
       'Test notification — notifications are working ✅',
       _details,
     );
+  }
+
+  /// Schedules a one-off notification ~1 minute out using the SAME
+  /// zonedSchedule + exact-alarm path as the daily reminder — so you can
+  /// verify the scheduling works without waiting until 8 AM.
+  Future<void> scheduleTestInOneMinute() async {
+    final ist = tz.getLocation('Asia/Kolkata');
+    final when = tz.TZDateTime.now(ist).add(const Duration(minutes: 1));
+
+    Future<void> doIt(AndroidScheduleMode mode) => _plugin.zonedSchedule(
+          _scheduledTestId,
+          'இன்றைய திருக்குறள்',
+          'Scheduled test fired — the daily 8 AM alarm should work too ✅',
+          when,
+          _details,
+          androidScheduleMode: mode,
+          uiLocalNotificationDateInterpretation:
+              UILocalNotificationDateInterpretation.absoluteTime,
+        );
+
+    try {
+      await doIt(AndroidScheduleMode.exactAllowWhileIdle);
+    } catch (_) {
+      await doIt(AndroidScheduleMode.inexactAllowWhileIdle);
+    }
   }
 
   Future<void> scheduleDailyReminder() async {
